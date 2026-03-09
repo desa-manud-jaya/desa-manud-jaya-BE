@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: manud-jaya
+
+  data:
+    mongodb:
+      uri: mongodb+srv://itopnaibaho:43QRlBD3tkbiewXZ@itop.cyzi1.mongodb.net/manud-jaya?retryWrites=true&w=majority&authSource=admin
