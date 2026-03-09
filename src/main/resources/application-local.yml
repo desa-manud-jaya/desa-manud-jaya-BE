@@ -2,6 +2,17 @@ spring:
   application:
     name: manud-jaya
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
   data:
     mongodb:
       uri: mongodb+srv://itopnaibaho:43QRlBD3tkbiewXZ@itop.cyzi1.mongodb.net/manud-jaya?retryWrites=true&w=majority&authSource=admin
+
+
+supabase:
+  url: https://YOUR_PROJECT_ID.supabase.co
+  api-key: YOUR_SUPABASE_ANON_KEY
+  bucket: business-images
