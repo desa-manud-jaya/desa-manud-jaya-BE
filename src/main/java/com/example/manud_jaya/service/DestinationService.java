@@ -59,6 +59,7 @@ public class DestinationService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .location(request.getLocation())
+                .approvalStatus("PENDING")
                 .price(request.getPrice())
                 .capacity(request.getCapacity())
                 .images(imageUrls)
@@ -81,5 +82,37 @@ public class DestinationService {
         }
 
         return destinationRepository.findByBusinessId(businessId);
+    }
+
+    public List<Destination> getApprovedDestinations(String businessId, String username) {
+
+        User vendor = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Business not found"));
+
+        if (!business.getVendorId().equals(vendor.getId())) {
+            throw new RuntimeException("Unauthorized access");
+        }
+
+        return destinationRepository
+                .findByBusinessIdAndApprovalStatus(businessId, "APPROVED");
+    }
+
+    public List<Destination> getPendingDestinations(String businessId, String username) {
+
+        User vendor = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Business not found"));
+
+        if (!business.getVendorId().equals(vendor.getId())) {
+            throw new RuntimeException("Unauthorized access");
+        }
+
+        return destinationRepository
+                .findByBusinessIdAndApprovalStatus(businessId, "PENDING");
     }
 }

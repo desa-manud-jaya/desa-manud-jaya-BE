@@ -11,4 +11,8 @@ public interface DestinationRepository extends MongoRepository<Destination, Stri
 
     List<Destination> findByBusinessId(String businessId);
 
+    List<Destination> findByApprovalStatus(String approvalStatus);
+
+    List<Destination> findByBusinessIdAndApprovalStatus(String businessId, String approvalStatus);
+
 }

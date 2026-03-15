@@ -56,4 +56,30 @@ public class VendorDestinationController {
                 )
         );
     }
+
+    @GetMapping("/approved")
+    public ResponseEntity<?> getApprovedDestinations(
+            @PathVariable String businessId,
+            Authentication authentication
+    ) {
+
+        String username = authentication.getName();
+
+        return ResponseEntity.ok(
+                destinationService.getApprovedDestinations(businessId, username)
+        );
+    }
+
+    @GetMapping("/pending")
+    public ResponseEntity<?> getPendingDestinations(
+            @PathVariable String businessId,
+            Authentication authentication
+    ) {
+
+        String username = authentication.getName();
+
+        return ResponseEntity.ok(
+                destinationService.getPendingDestinations(businessId, username)
+        );
+    }
 }

@@ -23,49 +23,7 @@ public class VendorService {
     private final UserRepository userRepository;
     private final BusinessRepository businessRepository;
 
-    public List<VendorBusinessResponse> getApprovedBusinesses() {
 
-        List<User> vendors =
-                userRepository.findByRoleAndVendorProfileApprovalStatus(
-                        "VENDOR",
-                        "APPROVED"
-                );
-
-        return vendors.stream()
-                .map(user -> VendorBusinessResponse.builder()
-                        .userId(user.getId())
-                        .vendorName(user.getVendorProfile().getVendorName())
-                        .phone(user.getVendorProfile().getPhone())
-                        .address(user.getVendorProfile().getAddress())
-                        .build())
-                .toList();
-    }
-
-    public VendorBusinessDetailResponse getBusinessById(String vendorId) {
-
-        User vendor = userRepository
-                .findByIdAndRoleAndVendorProfileApprovalStatus(
-                        vendorId,
-                        "VENDOR",
-                        "APPROVED"
-                )
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Business not found"
-                ));
-
-        VendorProfile profile = vendor.getVendorProfile();
-
-        return VendorBusinessDetailResponse.builder()
-                .userId(vendor.getId())
-                .vendorName(profile.getVendorName())
-                .phone(profile.getPhone())
-                .address(profile.getAddress())
-                .ktpNumber(profile.getKtpNumber())
-                .approvalStatus(profile.getApprovalStatus())
-                .approvedAt(profile.getApprovedAt())
-                .build();
-    }
 
     public Business createBusiness(CreateBusinessRequest request, String username) {
 
@@ -80,7 +38,7 @@ public class VendorService {
                 .city(request.getCity())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
-                .approvalStatus("PENDING")
+                .approvalStatus("ACTIVE")
                 .createdAt(LocalDateTime.now())
                 .build();
 

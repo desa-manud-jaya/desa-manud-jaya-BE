@@ -1,6 +1,7 @@
 package com.example.manud_jaya.service;
 
 import com.example.manud_jaya.configuration.security.JwtService;
+import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.dto.VendorProfile;
 import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.request.LoginRequest;
@@ -26,6 +27,10 @@ public class AuthService {
 
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getStatus().equals(ApprovalStatus.REJECTED)) {
+            throw new RuntimeException("User is rejected");
+        }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid password");

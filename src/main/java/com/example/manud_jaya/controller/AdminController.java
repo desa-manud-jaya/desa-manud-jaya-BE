@@ -24,6 +24,12 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getPendingVendors());
     }
 
+    @GetMapping("/vendors/approved")
+    public ResponseEntity<List<VendorPendingResponse>> getApprovedVendors() {
+
+        return ResponseEntity.ok(adminService.getApproveVendors());
+    }
+
     // APPROVE vendor
     @PostMapping("/vendors/{userId}/approve")
     public ResponseEntity<?> approveVendor(
@@ -36,5 +42,18 @@ public class AdminController {
         adminService.approveVendor(userId, adminUsername);
 
         return ResponseEntity.ok("Vendor approved");
+    }
+
+    @PostMapping("/vendors/{userId}/reject")
+    public ResponseEntity<?> rejectVendor(
+            @PathVariable String userId,
+            Authentication authentication
+    ) {
+
+        String adminUsername = authentication.getName();
+
+        adminService.rejectVendor(userId, adminUsername);
+
+        return ResponseEntity.ok("Vendor Rejected");
     }
 }

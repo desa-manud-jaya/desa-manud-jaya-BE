@@ -42,6 +42,27 @@ public class AdminService {
                 .toList();
     }
 
+    public List<VendorPendingResponse> getApproveVendors() {
+
+        List<User> vendors = userRepository
+                .findByRoleAndVendorProfileApprovalStatus(
+                        "VENDOR",
+                        ApprovalStatus.APPROVED
+                );
+
+        return vendors.stream()
+                .map(user -> VendorPendingResponse.builder()
+                        .userId(user.getId())
+                        .username(user.getUsername())
+                        .email(user.getEmail())
+                        .vendorName(user.getVendorProfile().getVendorName())
+                        .phone(user.getVendorProfile().getPhone())
+                        .address(user.getVendorProfile().getAddress())
+                        .ktpNumber(user.getVendorProfile().getKtpNumber())
+                        .build())
+                .toList();
+    }
+
     public void approveVendor(String userId, String adminId) {
 
         User user = userRepository.findById(userId)
@@ -58,47 +79,20 @@ public class AdminService {
         userRepository.save(user);
     }
 
-    public List<VendorBusinessResponse> getApprovedBusinesses() {
+    public void rejectVendor(String userId, String adminId) {
 
-        List<User> vendors =
-                userRepository.findByRoleAndVendorProfileApprovalStatus(
-                        "VENDOR",
-                        "APPROVED"
-                );
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
 
-        return vendors.stream()
-                .map(user -> VendorBusinessResponse.builder()
-                        .userId(user.getId())
-                        .vendorName(user.getVendorProfile().getVendorName())
-                        .phone(user.getVendorProfile().getPhone())
-                        .address(user.getVendorProfile().getAddress())
-                        .build())
-                .toList();
+        VendorProfile profile = user.getVendorProfile();
+
+        profile.setApprovalStatus(String.valueOf(ApprovalStatus.REJECTED));
+        profile.setApprovedAt(LocalDateTime.now());
+
+        user.setStatus("INACTIVE");
+        user.setUpdatedAt(LocalDateTime.now());
+
+        userRepository.save(user);
     }
 
-    public VendorBusinessDetailResponse getBusinessById(String vendorId) {
-
-        User vendor = userRepository
-                .findByIdAndRoleAndVendorProfileApprovalStatus(
-                        vendorId,
-                        "VENDOR",
-                        "APPROVED"
-                )
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Business not found"
-                ));
-
-        VendorProfile profile = vendor.getVendorProfile();
-
-        return VendorBusinessDetailResponse.builder()
-                .userId(vendor.getId())
-                .vendorName(profile.getVendorName())
-                .phone(profile.getPhone())
-                .address(profile.getAddress())
-                .ktpNumber(profile.getKtpNumber())
-                .approvalStatus(profile.getApprovalStatus())
-                .approvedAt(profile.getApprovedAt())
-                .build();
-    }
 }

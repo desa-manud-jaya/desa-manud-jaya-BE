@@ -25,6 +25,7 @@ public class Destination {
     private String location;
     private Double price;
     private Integer capacity;
+    private String approvalStatus;
     private List<String> images;
     private LocalDateTime createdAt;
 }

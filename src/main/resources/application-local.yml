@@ -13,6 +13,6 @@ spring:
 
 
 supabase:
-  url: https://YOUR_PROJECT_ID.supabase.co
-  api-key: YOUR_SUPABASE_ANON_KEY
-  bucket: business-images
+  url: https://kvnsbatzpsbrocyinnpy.supabase.co
+  api-key: sb_publishable_FIFRe-VeTP8-t7LHXBGiIQ_KmcuiBPs
+  bucket: Object-Image
