@@ -1,14 +1,8 @@
 package com.example.manud_jaya.service;
 
-import com.example.manud_jaya.model.config.SupabaseConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -20,8 +14,6 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class SupabaseStorageService {
-
-    private final SupabaseConfig supabaseConfig;
 
     private final S3Client s3Client;
 

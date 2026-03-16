@@ -9,7 +9,8 @@ spring:
 
   data:
     mongodb:
-      uri: mongodb+srv://itopnaibaho:43QRlBD3tkbiewXZ@itop.cyzi1.mongodb.net/manud-jaya?retryWrites=true&w=majority&authSource=admin
+      uri: mongodb+srv://desamanud:desamanud@cluster0.lkpsu9n.mongodb.net/manud-jaya?retryWrites=true&w=majority&authSource=admin
+#      mongodb+srv://itopnaibaho:43QRlBD3tkbiewXZ@itop.cyzi1.mongodb.net/manud-jaya?retryWrites=true&w=majority&authSource=admin
 
 
 supabase:
