@@ -2,15 +2,13 @@ package com.example.manud_jaya.service;
 
 import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.dto.VendorProfile;
+import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.User;
-import com.example.manud_jaya.model.inbound.response.VendorBusinessDetailResponse;
-import com.example.manud_jaya.model.inbound.response.VendorBusinessResponse;
 import com.example.manud_jaya.model.inbound.response.VendorPendingResponse;
+import com.example.manud_jaya.repository.BusinessRepository;
 import com.example.manud_jaya.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +18,7 @@ import java.util.List;
 public class AdminService {
 
     private final UserRepository userRepository;
+    private final BusinessRepository businessRepository;
 
     public List<VendorPendingResponse> getPendingVendors() {
 
@@ -76,6 +75,16 @@ public class AdminService {
         user.setStatus("ACTIVE");
         user.setUpdatedAt(LocalDateTime.now());
 
+        Business business = Business.builder()
+                .vendorId(user.getId())
+                .name(profile.getVendorName())
+                .description(profile.getDescription())
+                .address(profile.getAddress())
+                .approvalStatus(String.valueOf(ApprovalStatus.APPROVED))
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        businessRepository.save(business);
         userRepository.save(user);
     }
 

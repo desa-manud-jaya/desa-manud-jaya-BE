@@ -12,7 +12,7 @@ import java.util.Optional;
 @Repository
 public interface BusinessRepository extends MongoRepository<Business, String> {
 
-    List<Business> findByVendorId(String vendorId);
+    Optional<Business> findByVendorId(String vendorId);
 
     Page<Business> findByApprovalStatus(String approvalStatus, Pageable pageable);
 

@@ -2,6 +2,7 @@ package com.example.manud_jaya.service;
 
 import com.example.manud_jaya.model.config.SupabaseConfig;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -9,6 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -19,41 +23,39 @@ public class SupabaseStorageService {
 
     private final SupabaseConfig supabaseConfig;
 
+    private final S3Client s3Client;
+
+    @Value("${supabase.bucket}")
+    private String bucket;
+
+    @Value("${supabase.url}")
+    private String baseUrl;
+
     public String uploadFile(MultipartFile file) throws IOException {
 
         if (!file.getContentType().startsWith("image/")) {
             throw new RuntimeException("File must be image");
         }
 
-        String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
+        String original = file.getOriginalFilename().replaceAll("\\s+", "_");
+        String fileName = UUID.randomUUID() + "-" + original;
 
-        String uploadUrl =
-                supabaseConfig.getUrl()
-                        + "/storage/v1/object/"
-                        + supabaseConfig.getBucket()
-                        + "/"
-                        + fileName;
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(fileName)
+                .contentType(file.getContentType())
+                .build();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.set("apikey", supabaseConfig.getApiKey());
-        headers.set("Authorization", "Bearer " + supabaseConfig.getApiKey());
-
-        HttpEntity<byte[]> request = new HttpEntity<>(file.getBytes(), headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-
-        restTemplate.exchange(
-                uploadUrl,
-                HttpMethod.POST,
+        s3Client.putObject(
                 request,
-                String.class
+                RequestBody.fromBytes(file.getBytes())
         );
 
-        return supabaseConfig.getUrl()
-                + "/storage/v1/object/public/"
-                + supabaseConfig.getBucket()
-                + "/"
-                + fileName;
+        // tetap pakai endpoint public Supabase
+        return baseUrl +
+                "/storage/v1/object/public/" +
+                bucket +
+                "/" +
+                fileName;
     }
 }

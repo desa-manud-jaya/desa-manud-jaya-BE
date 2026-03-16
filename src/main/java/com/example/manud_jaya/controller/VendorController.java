@@ -1,12 +1,12 @@
 package com.example.manud_jaya.controller;
 
+import com.example.manud_jaya.model.entity.Business;
+import com.example.manud_jaya.service.PublicBusinessService;
 import com.example.manud_jaya.service.SupabaseStorageService;
+import com.example.manud_jaya.service.VendorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -18,6 +18,7 @@ import java.util.Map;
 public class VendorController {
 
     private final SupabaseStorageService storageService;
+    private final PublicBusinessService publicBusinessService;
 
     @PostMapping("")
     public ResponseEntity<?> uploadImage(
@@ -31,5 +32,13 @@ public class VendorController {
                         "imageUrl", imageUrl
                 )
         );
+    }
+
+    @GetMapping("/{vendorId}/business")
+    public ResponseEntity<?> getBusiness(
+            @PathVariable String vendorId
+    ) {
+        Business business = publicBusinessService.getBusinessByVendor(vendorId);
+        return ResponseEntity.ok(business);
     }
 }

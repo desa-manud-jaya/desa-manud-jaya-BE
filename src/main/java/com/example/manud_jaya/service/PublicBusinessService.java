@@ -27,4 +27,11 @@ public class PublicBusinessService {
                 .findByIdAndApprovalStatus(businessId, "APPROVED")
                 .orElseThrow(() -> new RuntimeException("Business not found"));
     }
+
+    public Business getBusinessByVendor(String vendorId) {
+
+        return businessRepository
+                .findByVendorId(vendorId)
+                .orElseThrow(() -> new RuntimeException("don't find business"));
+    }
 }

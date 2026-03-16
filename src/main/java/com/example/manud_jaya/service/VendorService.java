@@ -45,13 +45,6 @@ public class VendorService {
         return businessRepository.save(business);
     }
 
-    public List<Business> getVendorBusinesses(String username) {
-
-        User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
-
-        return businessRepository.findByVendorId(vendor.getId());
-    }
 
     public Business getBusinessDetail(String businessId, String username) {
 

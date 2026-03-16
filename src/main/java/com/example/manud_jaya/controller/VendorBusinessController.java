@@ -28,15 +28,6 @@ public class VendorBusinessController {
         );
     }
 
-    @GetMapping
-    public ResponseEntity<?> getMyBusinesses(Authentication authentication) {
-
-        String username = authentication.getName();
-
-        return ResponseEntity.ok(
-                vendorService.getVendorBusinesses(username)
-        );
-    }
 
     @GetMapping("/{businessId}")
     public ResponseEntity<?> getBusinessDetail(
