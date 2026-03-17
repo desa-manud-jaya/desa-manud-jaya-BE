@@ -10,7 +10,6 @@ spring:
   data:
     mongodb:
       uri: mongodb+srv://desamanud:desamanud@cluster0.lkpsu9n.mongodb.net/manud-jaya?retryWrites=true&w=majority&authSource=admin
-#      mongodb+srv://itopnaibaho:43QRlBD3tkbiewXZ@itop.cyzi1.mongodb.net/manud-jaya?retryWrites=true&w=majority&authSource=admin
 
 
 supabase:
@@ -20,5 +19,5 @@ supabase:
 
   s3:
     endpoint: https://kvnsbatzpsbrocyinnpy.storage.supabase.co/storage/v1/s3
-    access-key: YOUR_NEW_ACCESS_KEY
-    secret-key: YOUR_NEW_SECRET_KEY
+    access-key: 1b78adc5617c4f5f0769768b7d37ecca
+    secret-key: 9d967fc0b2bec5f5be00742ccc0a600e38aacd048c03be1af0be7622aaa60c78
