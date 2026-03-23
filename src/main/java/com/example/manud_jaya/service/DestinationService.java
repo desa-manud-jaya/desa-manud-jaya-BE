@@ -50,18 +50,19 @@ public class DestinationService {
                 throw new RuntimeException("File must be image");
             }
 
-            String url = storageService.uploadFile(image);
+            String url = storageService.uploadImage(image);
             imageUrls.add(url);
         }
 
         Destination destination = Destination.builder()
                 .businessId(businessId)
                 .name(request.getName())
+                .type(request.getType())
+                .activities(request.getActivities())
+                .ecoValue(request.getEcoValue())
+                .subTitle(request.getSubTitle())
                 .description(request.getDescription())
-                .location(request.getLocation())
                 .approvalStatus("PENDING")
-                .price(request.getPrice())
-                .capacity(request.getCapacity())
                 .images(imageUrls)
                 .createdAt(LocalDateTime.now())
                 .build();

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -12,9 +14,9 @@ import lombok.NoArgsConstructor;
 public class CreateDestinationRequest {
 
     private String name;
+    private String type;
+    private String subTitle;
     private String description;
-    private String location;
-    private Double price;
-    private Integer capacity;
-
+    private String ecoValue;
+    private List<String> activities;
 }

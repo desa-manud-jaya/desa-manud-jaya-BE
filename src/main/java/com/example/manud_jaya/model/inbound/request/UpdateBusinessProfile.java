@@ -1,6 +1,5 @@
 package com.example.manud_jaya.model.inbound.request;
 
-
 import com.example.manud_jaya.model.dto.JenisUsaha;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,17 +10,18 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VendorRegisterRequest {
+public class UpdateBusinessProfile {
 
-    private String username;
-    private String email;
-    private String password;
-    private JenisUsaha jenisUsaha;
     private String namaUsaha;
     private String namaOwner;
-    private String description;
-    private String ktpNumber;
+    private String bankAccountName;
+    private String bankAccountNumber;
+    private JenisUsaha jenisUsaha;
+    private String email;
     private String phone;
     private String address;
-
+    private String nik;
+    private String nib;
+    private String sku;
+    private String siup;
 }
