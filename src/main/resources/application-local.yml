@@ -2,22 +2,26 @@ spring:
   application:
     name: manud-jaya
 
-  servlet:
-    multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
-
   data:
     mongodb:
       uri: mongodb+srv://itopnaibaho:43QRlBD3tkbiewXZ@itop.cyzi1.mongodb.net/manud-jaya?retryWrites=true&w=majority&authSource=admin
 
-
 supabase:
-  url: https://kvnsbatzpsbrocyinnpy.supabase.co
-  api-key: sb_publishable_FIFRe-VeTP8-t7LHXBGiIQ_KmcuiBPs
-  bucket: Object-Image
+    url: https://kvnsbatzpsbrocyinnpy.supabase.co
+    api-key: sb_publishable_FIFRe-VeTP8-t7LHXBGiIQ_KmcuiBPs
+    bucket: Object-Image-Dev
 
-  s3:
-    endpoint: https://kvnsbatzpsbrocyinnpy.storage.supabase.co/storage/v1/s3
-    access-key: 1b78adc5617c4f5f0769768b7d37ecca
-    secret-key: 9d967fc0b2bec5f5be00742ccc0a600e38aacd048c03be1af0be7622aaa60c78
+    s3:
+      endpoint: https://kvnsbatzpsbrocyinnpy.storage.supabase.co/storage/v1/s3
+      access-key: 1b78adc5617c4f5f0769768b7d37ecca
+      secret-key: 9d967fc0b2bec5f5be00742ccc0a600e38aacd048c03be1af0be7622aaa60c78
+
+jwt:
+  secret-key: my-super-secret-jwt-key-for-travel-app-12345
+
+logging:
+  level:
+    root: INFO
+    com.example.manud_jaya: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"

@@ -30,6 +30,10 @@ public class VendorService {
         User vendor = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Vendor not found"));
 
+        if (businessRepository.findByVendorId(vendor.getId()).isPresent()) {
+            throw new RuntimeException("Vendor already has a business");
+        }
+
         Business business = Business.builder()
                 .vendorId(vendor.getId())
                 .name(request.getName())
@@ -38,7 +42,7 @@ public class VendorService {
                 .city(request.getCity())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
-                .approvalStatus("ACTIVE")
+                .approvalStatus("APPROVED")
                 .createdAt(LocalDateTime.now())
                 .build();
 
