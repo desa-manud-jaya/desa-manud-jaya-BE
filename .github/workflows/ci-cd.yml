@@ -38,34 +38,10 @@ jobs:
     environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
 
     env:
-      # Branch -> Spring profile mapping
-      SPRING_PROFILES_ACTIVE: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
-
-      # Dev profile vars (used when SPRING_PROFILES_ACTIVE=dev)
-      DEV_JWT_SECRET: ${{ secrets.DEV_JWT_SECRET }}
-      DEV_MONGODB_URI: ${{ secrets.DEV_MONGODB_URI }}
-      DEV_SUPABASE_URL: ${{ secrets.DEV_SUPABASE_URL }}
-      DEV_SUPABASE_API_KEY: ${{ secrets.DEV_SUPABASE_API_KEY }}
-      DEV_SUPABASE_BUCKET: ${{ secrets.DEV_SUPABASE_BUCKET }}
-      DEV_S3_ENDPOINT: ${{ secrets.DEV_S3_ENDPOINT }}
-      DEV_S3_ACCESS_KEY: ${{ secrets.DEV_S3_ACCESS_KEY }}
-      DEV_S3_SECRET_KEY: ${{ secrets.DEV_S3_SECRET_KEY }}
-
-      # Prod profile vars (used when SPRING_PROFILES_ACTIVE=prod)
-      PROD_JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
-      PROD_MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
-      PROD_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
-      PROD_SUPABASE_API_KEY: ${{ secrets.PROD_SUPABASE_API_KEY }}
-      PROD_SUPABASE_BUCKET: ${{ secrets.PROD_SUPABASE_BUCKET }}
-      PROD_S3_ENDPOINT: ${{ secrets.PROD_S3_ENDPOINT }}
-      PROD_S3_ACCESS_KEY: ${{ secrets.PROD_S3_ACCESS_KEY }}
-      PROD_S3_SECRET_KEY: ${{ secrets.PROD_S3_SECRET_KEY }}
-
       # Railway deploy variables
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: 1c768cd5-bcc0-4b0b-a2d9-415cf5642430
       RAILWAY_ENVIRONMENT: production
-      RAILWAY_SERVICE: ${{ github.ref_name == 'main' && 'desa-manud-jaya-BE' || 'desa-manud-jaya-BE-dev' }}
 
     steps:
       - name: Checkout
@@ -81,10 +57,24 @@ jobs:
       - name: Build artifact
         run: bash mvnw -DskipTests clean package
 
-      - name: Show selected profile
+      - name: Resolve deployment target
+        id: target
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "service=desa-manud-jaya-BE" >> "$GITHUB_OUTPUT"
+            echo "profile=prod" >> "$GITHUB_OUTPUT"
+            echo "url=https://desa-manud-jaya-backend.up.railway.app" >> "$GITHUB_OUTPUT"
+          else
+            echo "service=desa-manud-jaya-BE-dev" >> "$GITHUB_OUTPUT"
+            echo "profile=dev" >> "$GITHUB_OUTPUT"
+            echo "url=https://desa-manud-jaya-backend-dev.up.railway.app" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Show selected target
         run: |
           echo "Branch: ${GITHUB_REF_NAME}"
-          echo "SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}"
+          echo "Railway service: ${{ steps.target.outputs.service }}"
+          echo "Spring profile: ${{ steps.target.outputs.profile }}"
 
       - name: Set up Node.js (for Railway CLI)
         uses: actions/setup-node@v4
@@ -101,20 +91,23 @@ jobs:
             exit 1
           fi
 
+      - name: Ensure runtime profile on Railway service
+        run: |
+          railway variable set "SPRING_PROFILES_ACTIVE=${{ steps.target.outputs.profile }}" \
+            --service "${{ steps.target.outputs.service }}" \
+            --environment "${RAILWAY_ENVIRONMENT}" \
+            --skip-deploys
+
       - name: Deploy to Railway
         run: |
-          echo "Deploying branch ${GITHUB_REF_NAME} to service ${RAILWAY_SERVICE}"
+          echo "Deploying branch ${GITHUB_REF_NAME} to service ${{ steps.target.outputs.service }}"
           railway up \
             --ci \
             --detach \
             --project "${RAILWAY_PROJECT_ID}" \
             --environment "${RAILWAY_ENVIRONMENT}" \
-            --service "${RAILWAY_SERVICE}"
+            --service "${{ steps.target.outputs.service }}"
 
       - name: Show target URL
         run: |
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            echo "Production URL: https://desa-manud-jaya-backend.up.railway.app"
-          else
-            echo "Development URL: https://desa-manud-jaya-backend-dev.up.railway.app"
-          fi
+          echo "Target URL: ${{ steps.target.outputs.url }}"
