@@ -61,6 +61,12 @@ jobs:
       PROD_S3_ACCESS_KEY: ${{ secrets.PROD_S3_ACCESS_KEY }}
       PROD_S3_SECRET_KEY: ${{ secrets.PROD_S3_SECRET_KEY }}
 
+      # Railway deploy variables
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: 1c768cd5-bcc0-4b0b-a2d9-415cf5642430
+      RAILWAY_ENVIRONMENT: production
+      RAILWAY_SERVICE: ${{ github.ref_name == 'main' && 'desa-manud-jaya-BE' || 'desa-manud-jaya-BE-dev' }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,6 +86,35 @@ jobs:
           echo "Branch: ${GITHUB_REF_NAME}"
           echo "SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}"
 
-      # TODO: Replace with your real deploy command (SSH, Docker, Render, Railway, etc.)
-      - name: Deploy placeholder
-        run: echo "Deploy step not configured yet. Add your platform-specific deployment command here."
+      - name: Set up Node.js (for Railway CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Validate Railway token
+        run: |
+          if [ -z "${RAILWAY_TOKEN}" ]; then
+            echo "Missing required secret: RAILWAY_TOKEN"
+            exit 1
+          fi
+
+      - name: Deploy to Railway
+        run: |
+          echo "Deploying branch ${GITHUB_REF_NAME} to service ${RAILWAY_SERVICE}"
+          railway up \
+            --ci \
+            --detach \
+            --project "${RAILWAY_PROJECT_ID}" \
+            --environment "${RAILWAY_ENVIRONMENT}" \
+            --service "${RAILWAY_SERVICE}"
+
+      - name: Show target URL
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "Production URL: https://desa-manud-jaya-backend.up.railway.app"
+          else
+            echo "Development URL: https://desa-manud-jaya-backend-dev.up.railway.app"
+          fi
