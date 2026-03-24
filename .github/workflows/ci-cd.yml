@@ -41,7 +41,6 @@ jobs:
       # Railway deploy variables
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: 1c768cd5-bcc0-4b0b-a2d9-415cf5642430
-      RAILWAY_ENVIRONMENT: production
 
     steps:
       - name: Checkout
@@ -63,10 +62,12 @@ jobs:
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
             echo "service=desa-manud-jaya-BE" >> "$GITHUB_OUTPUT"
             echo "profile=prod" >> "$GITHUB_OUTPUT"
+            echo "railway_env=prod" >> "$GITHUB_OUTPUT"
             echo "url=https://desa-manud-jaya-backend.up.railway.app" >> "$GITHUB_OUTPUT"
           else
             echo "service=desa-manud-jaya-BE-dev" >> "$GITHUB_OUTPUT"
             echo "profile=dev" >> "$GITHUB_OUTPUT"
+            echo "railway_env=dev" >> "$GITHUB_OUTPUT"
             echo "url=https://desa-manud-jaya-backend-dev.up.railway.app" >> "$GITHUB_OUTPUT"
           fi
 
@@ -74,6 +75,7 @@ jobs:
         run: |
           echo "Branch: ${GITHUB_REF_NAME}"
           echo "Railway service: ${{ steps.target.outputs.service }}"
+          echo "Railway environment: ${{ steps.target.outputs.railway_env }}"
           echo "Spring profile: ${{ steps.target.outputs.profile }}"
 
       - name: Set up Node.js (for Railway CLI)
@@ -95,17 +97,17 @@ jobs:
         run: |
           railway variable set "SPRING_PROFILES_ACTIVE=${{ steps.target.outputs.profile }}" \
             --service "${{ steps.target.outputs.service }}" \
-            --environment "${RAILWAY_ENVIRONMENT}" \
+            --environment "${{ steps.target.outputs.railway_env }}" \
             --skip-deploys
 
       - name: Deploy to Railway
         run: |
-          echo "Deploying branch ${GITHUB_REF_NAME} to service ${{ steps.target.outputs.service }}"
+          echo "Deploying branch ${GITHUB_REF_NAME} to service ${{ steps.target.outputs.service }} in env ${{ steps.target.outputs.railway_env }}"
           railway up \
             --ci \
             --detach \
             --project "${RAILWAY_PROJECT_ID}" \
-            --environment "${RAILWAY_ENVIRONMENT}" \
+            --environment "${{ steps.target.outputs.railway_env }}" \
             --service "${{ steps.target.outputs.service }}"
 
       - name: Show target URL
