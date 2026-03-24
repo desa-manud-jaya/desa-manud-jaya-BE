@@ -75,16 +75,19 @@ public class AdminService {
         user.setStatus("ACTIVE");
         user.setUpdatedAt(LocalDateTime.now());
 
-        Business business = Business.builder()
-                .vendorId(user.getId())
-                .name(profile.getVendorName())
-                .description(profile.getDescription())
-                .address(profile.getAddress())
-                .approvalStatus(String.valueOf(ApprovalStatus.APPROVED))
-                .createdAt(LocalDateTime.now())
-                .build();
+        if (businessRepository.findByVendorId(user.getId()).isEmpty()) {
+            Business business = Business.builder()
+                    .vendorId(user.getId())
+                    .name(profile.getVendorName())
+                    .description(profile.getDescription())
+                    .address(profile.getAddress())
+                    .approvalStatus(String.valueOf(ApprovalStatus.APPROVED))
+                    .createdAt(LocalDateTime.now())
+                    .build();
 
-        businessRepository.save(business);
+            businessRepository.save(business);
+        }
+
         userRepository.save(user);
     }
 

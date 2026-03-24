@@ -27,11 +27,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/vendor/**").hasRole("VENDOR")
                         .requestMatchers("/user/**").hasRole("USER")
                         .requestMatchers(HttpMethod.GET, "/businesses/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/destinations/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/packages/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
