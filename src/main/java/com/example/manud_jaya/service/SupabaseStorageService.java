@@ -71,12 +71,17 @@ public class SupabaseStorageService {
             throw new RuntimeException("File is empty");
         }
 
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new RuntimeException("File size exceeds 10 MB");
+        }
+
         String contentType = file.getContentType();
         if (contentType == null ||
                 (!contentType.equals("application/pdf")
-                        && !contentType.equals("application/msword")
-                        && !contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))) {
-            throw new RuntimeException("Invalid document type");
+                        && !contentType.equals("image/jpeg")
+                        && !contentType.equals("image/jpg")
+                        && !contentType.equals("image/png"))) {
+            throw new RuntimeException("Invalid document type. Supported: PDF/JPG/JPEG/PNG");
         }
     }
 

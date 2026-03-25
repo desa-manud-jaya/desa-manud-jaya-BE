@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreatePackageRequest {
+public class UpdatePackageRequest {
     private String name;
     private PackageCategory category;
     private BigDecimal price;
@@ -24,4 +24,5 @@ public class CreatePackageRequest {
     private String termsAndConditions;
     private String pricingPolicy;
     private String cancellationPolicy;
+    private String moderationNote;
 }

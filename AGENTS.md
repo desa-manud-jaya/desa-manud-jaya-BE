@@ -25,7 +25,16 @@ This document defines implementation conventions for contributors and AI/code ag
    - `/swagger-ui/**`
    - `/swagger-ui.html`
 
+### Temporary exception (project decision)
+- `GET /vendor/{vendorId}/business` is currently kept as-is for compatibility with existing frontend behavior.
+- This endpoint is an explicit exception to rule #1/#2 above and must be treated as technical debt to be revisited later.
+
 ## 3) Domain Conventions
+### Auth model scope (current)
+- Roles remain `ADMIN`, `USER`, `VENDOR` only for now.
+- No `CS` role implementation in current phase.
+- Login identifier remains **username + password** for now.
+
 ### Vendor status lifecycle
 - `PLEASE_FILL_PROFILE` → after vendor registration
 - `PENDING` → after vendor completes profile form
@@ -51,7 +60,36 @@ This document defines implementation conventions for contributors and AI/code ag
    - `requirementDocument` (file)
    - `photo` (file)
 
-## 5) Swagger / OpenAPI Rules
+## 5) New Module Conventions (Implemented)
+### Package lifecycle expansion
+- Vendor package endpoints now support:
+  - update package,
+  - submit deletion request,
+  - filtered/paginated listing.
+- Admin package endpoints now support:
+  - package detail for review,
+  - deletion request queue,
+  - deletion approve/reject actions.
+- Package entity includes moderation metadata (`updatedAt`, deletion request status/review info, moderation notes).
+
+### Vendor document verification
+- `VendorDocument` is the canonical document verification entity.
+- Document upload validation:
+  - Allowed: PDF/JPG/JPEG/PNG
+  - Max size: 10 MB
+- Vendor supports upload/list/progress APIs.
+- Admin supports pending queue and approve/reject APIs.
+
+### Analytics and approval center
+- Dashboard analytics endpoints exist for `/vendor/dashboard/analytics` and `/admin/dashboard/analytics`.
+- Impact analytics endpoint exists for `/vendor/impact-analytics`.
+- Consolidated admin queue endpoint exists at `/admin/approval-center` for partner/package/deletion/document requests.
+
+### Audit logging
+- Moderation actions are persisted into `moderation_audit_logs`.
+- Prefer logging all approve/reject/request-deletion/document-review operations.
+
+## 6) Swagger / OpenAPI Rules
 1. Every new endpoint must include OpenAPI annotations:
    - `@Operation`
    - `@ApiResponse` / `@ApiResponses`
@@ -64,7 +102,7 @@ This document defines implementation conventions for contributors and AI/code ag
    - **Prod Swagger UI:** `https://desa-manud-jaya-backend.up.railway.app/swagger-ui/index.html`
    - **Prod OpenAPI docs:** `https://desa-manud-jaya-backend.up.railway.app/v3/api-docs`
 
-## 6) Environment & Deployment Profiles
+## 7) Environment & Deployment Profiles
 Use Spring profiles and environment-variable separation:
 
 - `application-local.yml` → `LOCAL_*`
@@ -131,17 +169,17 @@ If Railway performs the actual runtime/deploy, mirror the same variable names in
 
 Do not commit real secrets into repository files.
 
-## 7) Testing Rules
+## 8) Testing Rules
 1. Keep tests aligned with current service/controller signatures.
 2. Prefer focused unit tests for service logic and ownership checks.
 3. Any change to moderation/status flows must include test coverage.
 4. `mvn test` must pass before merge.
 
-## 8) Coding Style Notes
+## 9) Coding Style Notes
 - Use descriptive runtime errors or custom exceptions for domain errors.
 - Keep string literals for status centralized via enums where practical.
 - Avoid dead imports/unused dependencies in controllers/services.
 
-## 9) Git Operation Policy
+## 10) Git Operation Policy
 1. Do **not** push to remote repositories (including GitHub) unless the user explicitly asks for a push.
 2. If code changes are requested, prepare them locally first and wait for explicit approval before any `git push`.

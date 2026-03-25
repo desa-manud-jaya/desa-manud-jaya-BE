@@ -11,17 +11,22 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByUsername(String username);
+
     List<User> findByRoleAndVendorProfileApprovalStatus(
             String role,
             ApprovalStatus approvalStatus
     );
+
     List<User> findByRoleAndVendorProfileApprovalStatus(
             String role,
             String approvalStatus
     );
+
     Optional<User> findByIdAndRoleAndVendorProfileApprovalStatus(
             String id,
             String role,
             String approvalStatus
     );
+
+    long countByRoleAndStatus(String role, String status);
 }

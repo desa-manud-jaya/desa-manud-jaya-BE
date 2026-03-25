@@ -31,7 +31,7 @@ public class PublicBusinessService {
     public Business getBusinessByVendor(String vendorId) {
 
         return businessRepository
-                .findByVendorId(vendorId)
+                .findFirstByVendorId(vendorId)
                 .orElseThrow(() -> new RuntimeException("don't find business"));
     }
 }
