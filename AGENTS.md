@@ -60,6 +60,11 @@ This document defines implementation conventions for contributors and AI/code ag
    - `requirementDocument` (file)
    - `photo` (file)
 
+### Public approved-listing endpoints (current)
+- `GET /destinations/approved` → returns all approved destinations.
+- `GET /packages/approved` → returns all approved packages.
+- `GET /packages/approved/with-destinations` → returns one payload containing both approved packages and approved destinations.
+
 ## 5) New Module Conventions (Implemented)
 ### Package lifecycle expansion
 - Vendor package endpoints now support:
@@ -219,6 +224,10 @@ Do not commit real secrets into repository files.
   - `GET /admin/revenue/summary` for total revenue
   - Date-range filtering via `startDate` + `endDate` with format validation (`yyyy-MM-dd`)
   - Unit tests for booking transaction service
+- Public approved listing endpoints:
+  - `GET /destinations/approved`
+  - `GET /packages/approved`
+  - `GET /packages/approved/with-destinations`
 
 ### Intentionally not implemented in current phase
 - CS role introduction
