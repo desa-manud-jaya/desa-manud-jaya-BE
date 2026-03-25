@@ -58,6 +58,11 @@ This document defines implementation conventions for contributors and AI/code ag
    - `@Tag`
 2. Protected controllers should include `@SecurityRequirement(name = "bearer-jwt")`.
 3. Swagger docs must reflect real behavior (status transitions, required fields, access constraints).
+4. Canonical Swagger/OpenAPI URLs must use **HTTPS**:
+   - **Dev Swagger UI:** `https://desa-manud-jaya-backend-dev.up.railway.app/swagger-ui/index.html`
+   - **Dev OpenAPI docs:** `https://desa-manud-jaya-backend-dev.up.railway.app/v3/api-docs`
+   - **Prod Swagger UI:** `https://desa-manud-jaya-backend.up.railway.app/swagger-ui/index.html`
+   - **Prod OpenAPI docs:** `https://desa-manud-jaya-backend.up.railway.app/v3/api-docs`
 
 ## 6) Environment & Deployment Profiles
 Use Spring profiles and environment-variable separation:
@@ -136,3 +141,7 @@ Do not commit real secrets into repository files.
 - Use descriptive runtime errors or custom exceptions for domain errors.
 - Keep string literals for status centralized via enums where practical.
 - Avoid dead imports/unused dependencies in controllers/services.
+
+## 9) Git Operation Policy
+1. Do **not** push to remote repositories (including GitHub) unless the user explicitly asks for a push.
+2. If code changes are requested, prepare them locally first and wait for explicit approval before any `git push`.
