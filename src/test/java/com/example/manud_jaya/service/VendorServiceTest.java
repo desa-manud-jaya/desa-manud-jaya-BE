@@ -46,7 +46,7 @@ class VendorServiceTest {
                 .build();
 
         when(userRepository.findByUsername("vendor1")).thenReturn(Optional.of(vendor));
-        when(businessRepository.findByVendorId("vendor-1")).thenReturn(Optional.empty());
+        when(businessRepository.findFirstByVendorId("vendor-1")).thenReturn(Optional.empty());
         when(businessRepository.save(any(Business.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Business result = vendorService.createBusiness(request, "vendor1");
@@ -59,7 +59,7 @@ class VendorServiceTest {
     void createBusinessDuplicateThrows() {
         User vendor = User.builder().id("vendor-1").username("vendor1").build();
         when(userRepository.findByUsername("vendor1")).thenReturn(Optional.of(vendor));
-        when(businessRepository.findByVendorId("vendor-1"))
+        when(businessRepository.findFirstByVendorId("vendor-1"))
                 .thenReturn(Optional.of(Business.builder().id("b-1").vendorId("vendor-1").build()));
 
         assertThrows(RuntimeException.class, () ->

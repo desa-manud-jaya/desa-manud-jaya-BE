@@ -72,7 +72,7 @@ class AdminServiceTest {
     @Test
     void approveVendorSuccessCreatesBusinessWhenMissing() {
         when(userRepository.findById("vendor-1")).thenReturn(Optional.of(pendingVendor));
-        when(businessRepository.findByVendorId("vendor-1")).thenReturn(Optional.empty());
+        when(businessRepository.findFirstByVendorId("vendor-1")).thenReturn(Optional.empty());
 
         adminService.approveVendor("vendor-1", "admin-1");
 
@@ -90,7 +90,7 @@ class AdminServiceTest {
     @Test
     void approveVendorSkipsBusinessCreationWhenAlreadyExists() {
         when(userRepository.findById("vendor-1")).thenReturn(Optional.of(pendingVendor));
-        when(businessRepository.findByVendorId("vendor-1"))
+        when(businessRepository.findFirstByVendorId("vendor-1"))
                 .thenReturn(Optional.of(Business.builder().id("b-1").vendorId("vendor-1").build()));
 
         adminService.approveVendor("vendor-1", "admin-1");

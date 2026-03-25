@@ -30,7 +30,7 @@ public class VendorService {
         User vendor = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Vendor not found"));
 
-        if (businessRepository.findByVendorId(vendor.getId()).isPresent()) {
+        if (businessRepository.findFirstByVendorId(vendor.getId()).isPresent()) {
             throw new RuntimeException("Vendor already has a business");
         }
 

@@ -16,6 +16,10 @@ public class PublicDestinationService {
     private final DestinationRepository destinationRepository;
     private final BusinessRepository businessRepository;
 
+    public List<Destination> getAllApprovedDestinations() {
+        return destinationRepository.findByApprovalStatus("APPROVED");
+    }
+
     public List<Destination> getBusinessDestinations(String businessId) {
 
         Business business = businessRepository

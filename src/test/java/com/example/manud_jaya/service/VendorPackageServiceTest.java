@@ -34,6 +34,9 @@ class VendorPackageServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ModerationAuditService moderationAuditService;
+
     @InjectMocks
     private VendorPackageService vendorPackageService;
 
@@ -57,7 +60,10 @@ class VendorPackageServiceTest {
                 2,
                 20,
                 List.of("Day 1"),
-                List.of("Guide")
+                List.of("Guide"),
+                null,
+                null,
+                null
         );
 
         when(userRepository.findByUsername("vendor1")).thenReturn(Optional.of(vendor));
@@ -121,5 +127,28 @@ class VendorPackageServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> vendorPackageService.getApprovedDetail("p-1"));
+    }
+
+    @Test
+    void requestDeletionSetsPendingStatus() {
+        Package pkg = Package.builder().id("p-1").businessId("business-1").deletionRequestStatus(com.example.manud_jaya.model.dto.DeletionRequestStatus.NONE).build();
+
+        when(userRepository.findByUsername("vendor1")).thenReturn(Optional.of(vendor));
+        when(businessRepository.findById("business-1")).thenReturn(Optional.of(business));
+        when(packageRepository.findById("p-1")).thenReturn(Optional.of(pkg));
+        when(packageRepository.save(any(Package.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Package saved = vendorPackageService.requestDeletion("business-1", "p-1", "vendor1", "No longer offered");
+
+        assertEquals(com.example.manud_jaya.model.dto.DeletionRequestStatus.PENDING, saved.getDeletionRequestStatus());
+        assertEquals("No longer offered", saved.getDeletionRequestReason());
+    }
+
+    @Test
+    void approveDeletionRequiresPendingRequest() {
+        Package pkg = Package.builder().id("p-1").deletionRequestStatus(com.example.manud_jaya.model.dto.DeletionRequestStatus.NONE).build();
+        when(packageRepository.findById("p-1")).thenReturn(Optional.of(pkg));
+
+        assertThrows(RuntimeException.class, () -> vendorPackageService.approveDeletionRequest("p-1", "admin-1", "ok"));
     }
 }
