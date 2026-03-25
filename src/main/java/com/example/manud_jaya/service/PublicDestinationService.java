@@ -22,12 +22,12 @@ public class PublicDestinationService {
                 .findByIdAndApprovalStatus(businessId, "APPROVED")
                 .orElseThrow(() -> new RuntimeException("Business not found"));
 
-        return destinationRepository.findByBusinessId(business.getId());
+        return destinationRepository.findByBusinessIdAndApprovalStatus(business.getId(), "APPROVED");
     }
 
     public Destination getDestinationDetail(String destinationId) {
 
-        return destinationRepository.findById(destinationId)
+        return destinationRepository.findByIdAndApprovalStatus(destinationId, "APPROVED")
                 .orElseThrow(() -> new RuntimeException("Destination not found"));
     }
 }

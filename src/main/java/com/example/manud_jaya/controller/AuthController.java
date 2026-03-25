@@ -5,6 +5,10 @@ import com.example.manud_jaya.model.inbound.request.UserRegisterRequest;
 import com.example.manud_jaya.model.inbound.request.VendorRegisterRequest;
 import com.example.manud_jaya.model.inbound.response.LoginResponse;
 import com.example.manud_jaya.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -14,20 +18,24 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Authentication and registration endpoints")
 public class AuthController {
 
     private final AuthService authService;
 
     @PostMapping("/login")
+    @Operation(summary = "Login", description = "Authenticate with username and password, then receive JWT token.")
+    @ApiResponse(responseCode = "200", description = "Login successful")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
 
-        // biasanya cek ke database
         LoginResponse response = authService.login(request);
 
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/profile")
+    @Operation(summary = "Get auth profile", description = "Get current authenticated principal info from JWT.")
+    @SecurityRequirement(name = "bearer-jwt")
     public String profile() {
 
         Authentication auth = SecurityContextHolder
@@ -45,6 +53,8 @@ public class AuthController {
     }
 
     @PostMapping("/register/user")
+    @Operation(summary = "Register user", description = "Register a normal USER account.")
+    @ApiResponse(responseCode = "200", description = "User registered")
     public ResponseEntity<?> registerUser(@RequestBody UserRegisterRequest request) {
 
         authService.registerUser(request);
@@ -52,8 +62,9 @@ public class AuthController {
         return ResponseEntity.ok("User registered");
     }
 
-    // VENDOR REGISTER
     @PostMapping("/register/vendor")
+    @Operation(summary = "Register vendor", description = "Register a VENDOR account in PLEASE_FILL_PROFILE state.")
+    @ApiResponse(responseCode = "200", description = "Vendor registered")
     public ResponseEntity<?> registerVendor(@RequestBody VendorRegisterRequest request) {
 
         authService.registerVendor(request);

@@ -1,0 +1,115 @@
+name: CI / CD
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    branches:
+      - dev
+      - main
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build and test
+        run: bash mvnw clean test
+
+  deploy:
+    # Deploy only on direct pushes (not PRs)
+    if: github.event_name == 'push'
+    needs: build-test
+    runs-on: ubuntu-latest
+
+    # Uses GitHub Environments: dev for dev branch, prod for main branch
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+
+    env:
+      # Railway deploy variables
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: 1c768cd5-bcc0-4b0b-a2d9-415cf5642430
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build artifact
+        run: bash mvnw -DskipTests clean package
+
+      - name: Resolve deployment target
+        id: target
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "service=desa-manud-jaya-BE" >> "$GITHUB_OUTPUT"
+            echo "profile=prod" >> "$GITHUB_OUTPUT"
+            echo "railway_env=prod" >> "$GITHUB_OUTPUT"
+            echo "url=https://desa-manud-jaya-backend.up.railway.app" >> "$GITHUB_OUTPUT"
+          else
+            echo "service=desa-manud-jaya-BE-dev" >> "$GITHUB_OUTPUT"
+            echo "profile=dev" >> "$GITHUB_OUTPUT"
+            echo "railway_env=dev" >> "$GITHUB_OUTPUT"
+            echo "url=https://desa-manud-jaya-backend-dev.up.railway.app" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Show selected target
+        run: |
+          echo "Branch: ${GITHUB_REF_NAME}"
+          echo "Railway service: ${{ steps.target.outputs.service }}"
+          echo "Railway environment: ${{ steps.target.outputs.railway_env }}"
+          echo "Spring profile: ${{ steps.target.outputs.profile }}"
+
+      - name: Set up Node.js (for Railway CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Validate Railway token
+        run: |
+          if [ -z "${RAILWAY_TOKEN}" ]; then
+            echo "Missing required secret: RAILWAY_TOKEN"
+            exit 1
+          fi
+
+      - name: Ensure runtime profile on Railway service
+        run: |
+          railway variable set "SPRING_PROFILES_ACTIVE=${{ steps.target.outputs.profile }}" \
+            --service "${{ steps.target.outputs.service }}" \
+            --environment "${{ steps.target.outputs.railway_env }}" \
+            --skip-deploys
+
+      - name: Deploy to Railway
+        run: |
+          echo "Deploying branch ${GITHUB_REF_NAME} to service ${{ steps.target.outputs.service }} in env ${{ steps.target.outputs.railway_env }}"
+          railway up \
+            --ci \
+            --detach \
+            --project "${RAILWAY_PROJECT_ID}" \
+            --environment "${{ steps.target.outputs.railway_env }}" \
+            --service "${{ steps.target.outputs.service }}"
+
+      - name: Show target URL
+        run: |
+          echo "Target URL: ${{ steps.target.outputs.url }}"

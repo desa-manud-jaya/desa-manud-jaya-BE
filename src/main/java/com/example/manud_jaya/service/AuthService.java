@@ -5,6 +5,7 @@ import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.dto.VendorProfile;
 import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.request.LoginRequest;
+import com.example.manud_jaya.model.inbound.request.UpdateBusinessProfile;
 import com.example.manud_jaya.model.inbound.request.UserRegisterRequest;
 import com.example.manud_jaya.model.inbound.request.VendorRegisterRequest;
 import com.example.manud_jaya.model.inbound.response.LoginResponse;
@@ -23,6 +24,31 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
+    public User getUser(String username) {
+
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User putUserVendor(String username, UpdateBusinessProfile updateBusinessProfile) {
+
+        User user = getUser(username);
+        user.setStatus(ApprovalStatus.PENDING.toString());
+        VendorProfile vendorProfile = user.getVendorProfile();
+        vendorProfile.setAddress(updateBusinessProfile.getAddress());
+        vendorProfile.setPhone(updateBusinessProfile.getPhone());
+        vendorProfile.setNib(updateBusinessProfile.getNib());
+        vendorProfile.setSku(updateBusinessProfile.getSku());
+        vendorProfile.setSiup(updateBusinessProfile.getSiup());
+        vendorProfile.setNik(updateBusinessProfile.getNik());
+        vendorProfile.setVendorName(updateBusinessProfile.getNamaUsaha());
+        vendorProfile.setBankAccountName(updateBusinessProfile.getBankAccountName());
+        vendorProfile.setBankAccountNumber(updateBusinessProfile.getBankAccountNumber());
+        vendorProfile.setApprovalStatus(ApprovalStatus.PENDING.toString());
+
+        return userRepository.save(user);
+    }
+
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByUsername(request.getUsername())
@@ -39,6 +65,7 @@ public class AuthService {
         String token = jwtService.generateToken(user);
 
         return new LoginResponse(
+                user.getId(),
                 token,
                 user.getUsername(),
                 user.getRole()
@@ -64,12 +91,14 @@ public class AuthService {
     public void registerVendor(VendorRegisterRequest request) {
 
         VendorProfile vendorProfile = VendorProfile.builder()
-                .vendorName(request.getBusinessName())
+                .vendorName(request.getNamaUsaha())
+                .ownerName(request.getNamaOwner())
+                .jenisUsaha(request.getJenisUsaha())
                 .description(request.getDescription())
                 .phone(request.getPhone())
                 .address(request.getAddress())
                 .ktpNumber(request.getKtpNumber())
-                .approvalStatus("PENDING")
+                .approvalStatus("PLEASE_FILL_PROFILE")
                 .build();
 
 
@@ -79,7 +108,7 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole("VENDOR");
-        user.setStatus("PENDING_APPROVAL");
+        user.setStatus("PLEASE_FILL_PROFILE");
         user.setCreatedAt(LocalDateTime.now());
         user.setVendorProfile(vendorProfile);
         userRepository.save(user);

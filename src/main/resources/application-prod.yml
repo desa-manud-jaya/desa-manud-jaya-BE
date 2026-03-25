@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: manud-jaya
+
+  data:
+    mongodb:
+      uri: ${PROD_MONGODB_URI}
+
+supabase:
+  url: ${PROD_SUPABASE_URL}
+  api-key: ${PROD_SUPABASE_API_KEY}
+  bucket: ${PROD_SUPABASE_BUCKET:Object-Image}
+
+  s3:
+    endpoint: ${PROD_S3_ENDPOINT}
+    access-key: ${PROD_S3_ACCESS_KEY}
+    secret-key: ${PROD_S3_SECRET_KEY}
+
+jwt:
+  secret-key: ${PROD_JWT_SECRET}
+
+app:
+  openapi:
+    server-url: https://desa-manud-jaya-backend.up.railway.app
+
+logging:
+  level:
+    root: WARN
+    com.example.manud_jaya: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"

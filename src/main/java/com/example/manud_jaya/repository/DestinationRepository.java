@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DestinationRepository extends MongoRepository<Destination, String> {
@@ -15,4 +16,5 @@ public interface DestinationRepository extends MongoRepository<Destination, Stri
 
     List<Destination> findByBusinessIdAndApprovalStatus(String businessId, String approvalStatus);
 
+    Optional<Destination> findByIdAndApprovalStatus(String id, String approvalStatus);
 }

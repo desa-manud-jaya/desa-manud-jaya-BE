@@ -21,10 +21,11 @@ public class Destination {
     private String id;
     private String businessId;
     private String name;
+    private String type;
+    private String subTitle;
     private String description;
-    private String location;
-    private Double price;
-    private Integer capacity;
+    private String ecoValue;
+    private List<String> activities;
     private String approvalStatus;
     private List<String> images;
     private LocalDateTime createdAt;

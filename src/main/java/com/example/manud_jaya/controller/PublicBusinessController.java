@@ -1,26 +1,26 @@
 package com.example.manud_jaya.controller;
 
-import com.example.manud_jaya.model.inbound.response.VendorBusinessDetailResponse;
-import com.example.manud_jaya.model.inbound.response.VendorBusinessResponse;
 import com.example.manud_jaya.service.PublicBusinessService;
-import com.example.manud_jaya.service.VendorService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/businesses")
 @RequiredArgsConstructor
+@Tag(name = "Public Businesses", description = "Public endpoints for approved businesses")
 public class PublicBusinessController {
 
     private final PublicBusinessService businessService;
 
     @GetMapping
+    @Operation(summary = "Get approved businesses", description = "Get paginated list of approved businesses.")
     public ResponseEntity<?> getBusinesses(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @Parameter(description = "Page index (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size
     ) {
 
         return ResponseEntity.ok(
@@ -29,8 +29,9 @@ public class PublicBusinessController {
     }
 
     @GetMapping("/{businessId}")
+    @Operation(summary = "Get approved business detail")
     public ResponseEntity<?> getBusinessDetail(
-            @PathVariable String businessId
+            @Parameter(description = "Business ID") @PathVariable String businessId
     ) {
 
         return ResponseEntity.ok(
