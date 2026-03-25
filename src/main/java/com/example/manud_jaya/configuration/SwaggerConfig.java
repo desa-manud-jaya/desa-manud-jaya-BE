@@ -1,15 +1,22 @@
 package com.example.manud_jaya.configuration;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Configuration
 public class SwaggerConfig {
+
+    @Value("${app.openapi.server-url:http://localhost:8080}")
+    private String openApiServerUrl;
 
     @Bean
     public OpenAPI customOpenAPI() {
@@ -21,6 +28,11 @@ public class SwaggerConfig {
                         .contact(new Contact()
                                 .name("Desa Manud Jaya Team")
                                 .email("contact@desamanudjaya.com")))
+                .servers(List.of(
+                        new Server()
+                                .url(openApiServerUrl)
+                                .description("Canonical server url")
+                ))
                 .components(new Components()
                         .addSecuritySchemes("bearer-jwt", new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)

@@ -19,6 +19,10 @@ supabase:
 jwt:
   secret-key: ${PROD_JWT_SECRET}
 
+app:
+  openapi:
+    server-url: https://desa-manud-jaya-backend.up.railway.app
+
 logging:
   level:
     root: WARN
