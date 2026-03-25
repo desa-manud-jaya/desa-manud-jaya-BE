@@ -87,7 +87,14 @@ This document defines implementation conventions for contributors and AI/code ag
 
 ### Audit logging
 - Moderation actions are persisted into `moderation_audit_logs`.
-- Prefer logging all approve/reject/request-deletion/document-review operations.
+- Prefer logging all approve/reject/request-d-eletion/document-review operations.
+
+### Booking transactions and revenue
+- Canonical booking transaction collection: `transactions` (`BookingTransaction` entity).
+- Transaction must keep relations to both `User` and `Business` (id fields + Mongo references).
+- Default transaction status on booking creation is lowercase `pending`.
+- User booking history endpoint is `/user/bookings/{userId}` and must enforce self-access only (JWT principal must match `userId`).
+- Admin revenue endpoint is `/admin/revenue/summary` with optional `startDate` + `endDate` filter in `yyyy-MM-dd` format.
 
 ## 6) Swagger / OpenAPI Rules
 1. Every new endpoint must include OpenAPI annotations:
@@ -183,3 +190,41 @@ Do not commit real secrets into repository files.
 ## 10) Git Operation Policy
 1. Do **not** push to remote repositories (including GitHub) unless the user explicitly asks for a push.
 2. If code changes are requested, prepare them locally first and wait for explicit approval before any `git push`.
+
+## 11) Implementation Status Snapshot (Mar 25, 2026)
+### Implemented in current backend
+- Package lifecycle expansion:
+  - Vendor update package
+  - Vendor deletion request submission
+  - Admin deletion request moderation (approve/reject)
+  - Package detail support for moderation
+- Vendor document verification domain:
+  - `VendorDocument` entity + repository + services
+  - Vendor upload/list/progress APIs
+  - Admin pending queue + approve/reject APIs
+- Dashboard and operations APIs:
+  - Vendor dashboard analytics + impact analytics
+  - Admin dashboard analytics
+  - Vendor/Admin bookings and reviews listing APIs
+- Unified admin approval center endpoint:
+  - partner requests
+  - package requests
+  - package deletion requests
+  - document verification requests
+- Moderation audit logging persistence (`moderation_audit_logs`)
+- Booking transaction and revenue features (PB-37 to PB-41):
+  - `transactions` collection with user/business relations and default status `pending`
+  - `POST /user/bookings` for booking creation with automatic `pending` status
+  - `GET /user/bookings/{userId}` for self booking history
+  - `GET /admin/revenue/summary` for total revenue
+  - Date-range filtering via `startDate` + `endDate` with format validation (`yyyy-MM-dd`)
+  - Unit tests for booking transaction service
+
+### Intentionally not implemented in current phase
+- CS role introduction
+- Login identity migration (still username/password)
+- Refactor of `GET /vendor/{vendorId}/business` (explicitly deferred)
+
+### Validation baseline
+- `mvn -q -DskipTests compile` passes
+- `mvn test -q` passes

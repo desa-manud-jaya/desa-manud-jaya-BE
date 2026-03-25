@@ -280,6 +280,10 @@ public class VendorPackageService {
         return repository.findByApprovalStatus(ApprovalStatus.PENDING.toString());
     }
 
+    public List<Package> getAllApprovedPackages() {
+        return repository.findByApprovalStatus(ApprovalStatus.APPROVED.toString());
+    }
+
     public PagedResponse<Package> getDeletionRequests(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         List<Package> items = repository.findByDeletionRequestStatus(DeletionRequestStatus.PENDING, pageable);
