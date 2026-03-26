@@ -81,6 +81,7 @@ This document defines implementation conventions for contributors and AI/code ag
 - `VendorDocument` is the canonical document verification entity.
 - Document upload validation:
   - Allowed: PDF/JPG/JPEG/PNG
+  - Compatibility: `application/octet-stream` is accepted for PDF when filename ends with `.pdf` (Swagger/client fallback)
   - Max size: 10 MB
 - Vendor supports upload/list/progress APIs.
 - Admin supports pending queue and approve/reject APIs.
