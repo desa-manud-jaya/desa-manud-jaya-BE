@@ -59,6 +59,7 @@ This document defines implementation conventions for contributors and AI/code ag
    - `data` (JSON request part)
    - `requirementDocument` (file)
    - `photo` (file)
+   - Compatibility: `data` may arrive as `application/octet-stream` from Swagger/client tooling; backend should still parse it as JSON payload.
 
 ### Public approved-listing endpoints (current)
 - `GET /destinations/approved` → returns all approved destinations.

@@ -6,6 +6,7 @@ import com.example.manud_jaya.model.inbound.request.PackageDeletionRequest;
 import com.example.manud_jaya.model.inbound.request.UpdatePackageRequest;
 import com.example.manud_jaya.service.SupabaseStorageService;
 import com.example.manud_jaya.service.VendorPackageService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,6 +30,7 @@ import java.io.IOException;
 public class VendorPackageController {
     private final VendorPackageService vendorPackageService;
     private final SupabaseStorageService supabaseStorageService;
+    private final ObjectMapper objectMapper;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Create package", description = "Create a new package under a vendor-owned business. Newly created package is always PENDING.")
@@ -39,13 +41,15 @@ public class VendorPackageController {
     })
     public ResponseEntity<?> createPackage(
             @Parameter(description = "Business ID") @PathVariable String businessId,
-            @RequestPart("data") CreatePackageRequest request,
+            @RequestPart("data") MultipartFile data,
             @RequestPart("requirementDocument") MultipartFile doc,
             @RequestPart("photo") MultipartFile photo,
             Authentication authentication
     ) throws IOException {
 
         String username = authentication.getName();
+
+        CreatePackageRequest request = objectMapper.readValue(data.getBytes(), CreatePackageRequest.class);
 
         String docUrl = supabaseStorageService.uploadDocument(doc);
         String photoUrl = supabaseStorageService.uploadImage(photo);
