@@ -76,11 +76,18 @@ public class SupabaseStorageService {
         }
 
         String contentType = file.getContentType();
-        if (contentType == null ||
-                (!contentType.equals("application/pdf")
-                        && !contentType.equals("image/jpeg")
-                        && !contentType.equals("image/jpg")
-                        && !contentType.equals("image/png"))) {
+        String filename = file.getOriginalFilename() != null
+                ? file.getOriginalFilename().toLowerCase()
+                : "";
+
+        boolean isPdf = "application/pdf".equals(contentType)
+                || ("application/octet-stream".equals(contentType) && filename.endsWith(".pdf"));
+
+        boolean isSupportedImage = "image/jpeg".equals(contentType)
+                || "image/jpg".equals(contentType)
+                || "image/png".equals(contentType);
+
+        if (!isPdf && !isSupportedImage) {
             throw new RuntimeException("Invalid document type. Supported: PDF/JPG/JPEG/PNG");
         }
     }

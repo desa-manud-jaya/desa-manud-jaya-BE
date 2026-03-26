@@ -73,12 +73,18 @@ class AdminServiceTest {
     void approveVendorSuccessCreatesBusinessWhenMissing() {
         when(userRepository.findById("vendor-1")).thenReturn(Optional.of(pendingVendor));
         when(businessRepository.findFirstByVendorId("vendor-1")).thenReturn(Optional.empty());
+        when(businessRepository.save(any(Business.class))).thenAnswer(invocation -> {
+            Business business = invocation.getArgument(0);
+            business.setId("business-1");
+            return business;
+        });
 
         adminService.approveVendor("vendor-1", "admin-1");
 
         assertEquals("APPROVED", pendingVendor.getVendorProfile().getApprovalStatus());
         assertEquals("ACTIVE", pendingVendor.getStatus());
         assertNotNull(pendingVendor.getVendorProfile().getApprovedAt());
+        assertEquals("business-1", pendingVendor.getVendorProfile().getBusinessId());
 
         verify(businessRepository, times(1)).save(argThat((Business business) ->
                 business.getVendorId().equals("vendor-1")
@@ -95,6 +101,7 @@ class AdminServiceTest {
 
         adminService.approveVendor("vendor-1", "admin-1");
 
+        assertEquals("b-1", pendingVendor.getVendorProfile().getBusinessId());
         verify(businessRepository, never()).save(any(Business.class));
         verify(userRepository, times(1)).save(pendingVendor);
     }

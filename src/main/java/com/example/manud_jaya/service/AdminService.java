@@ -79,18 +79,21 @@ public class AdminService {
         user.setStatus("ACTIVE");
         user.setUpdatedAt(LocalDateTime.now());
 
-        if (businessRepository.findFirstByVendorId(user.getId()).isEmpty()) {
-            Business business = Business.builder()
-                    .vendorId(user.getId())
-                    .name(profile.getVendorName())
-                    .description(profile.getDescription())
-                    .address(profile.getAddress())
-                    .approvalStatus(String.valueOf(ApprovalStatus.APPROVED))
-                    .createdAt(LocalDateTime.now())
-                    .build();
+        Business linkedBusiness = businessRepository.findFirstByVendorId(user.getId())
+                .orElseGet(() -> {
+                    Business business = Business.builder()
+                            .vendorId(user.getId())
+                            .name(profile.getVendorName())
+                            .description(profile.getDescription())
+                            .address(profile.getAddress())
+                            .approvalStatus(String.valueOf(ApprovalStatus.APPROVED))
+                            .createdAt(LocalDateTime.now())
+                            .build();
 
-            businessRepository.save(business);
-        }
+                    return businessRepository.save(business);
+                });
+
+        profile.setBusinessId(linkedBusiness.getId());
 
         userRepository.save(user);
 

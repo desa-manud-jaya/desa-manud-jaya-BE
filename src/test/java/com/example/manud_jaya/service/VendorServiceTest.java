@@ -1,5 +1,6 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.model.dto.VendorProfile;
 import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.request.CreateBusinessRequest;
@@ -35,7 +36,11 @@ class VendorServiceTest {
 
     @Test
     void createBusinessSuccess() {
-        User vendor = User.builder().id("vendor-1").username("vendor1").build();
+        User vendor = User.builder()
+                .id("vendor-1")
+                .username("vendor1")
+                .vendorProfile(VendorProfile.builder().build())
+                .build();
         CreateBusinessRequest request = CreateBusinessRequest.builder()
                 .name("Business A")
                 .description("Desc")
@@ -47,12 +52,20 @@ class VendorServiceTest {
 
         when(userRepository.findByUsername("vendor1")).thenReturn(Optional.of(vendor));
         when(businessRepository.findFirstByVendorId("vendor-1")).thenReturn(Optional.empty());
-        when(businessRepository.save(any(Business.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(businessRepository.save(any(Business.class))).thenAnswer(invocation -> {
+            Business saved = invocation.getArgument(0);
+            saved.setId("biz-1");
+            return saved;
+        });
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Business result = vendorService.createBusiness(request, "vendor1");
 
         assertEquals("vendor-1", result.getVendorId());
         assertEquals("APPROVED", result.getApprovalStatus());
+        assertEquals("biz-1", result.getId());
+        assertEquals("biz-1", vendor.getVendorProfile().getBusinessId());
+        verify(userRepository, times(1)).save(vendor);
     }
 
     @Test

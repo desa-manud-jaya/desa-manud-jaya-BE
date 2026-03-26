@@ -56,7 +56,7 @@ This document defines implementation conventions for contributors and AI/code ag
 2. Vendor APIs may show own `PENDING/REJECTED` items.
 3. Keep endpoint naming stable and REST-like.
 4. For multipart package creation:
-   - `data` (JSON request part)
+   - `data` (JSON request part, content-type must be `application/json`)
    - `requirementDocument` (file)
    - `photo` (file)
 
@@ -81,6 +81,7 @@ This document defines implementation conventions for contributors and AI/code ag
 - `VendorDocument` is the canonical document verification entity.
 - Document upload validation:
   - Allowed: PDF/JPG/JPEG/PNG
+  - Compatibility: `application/octet-stream` is accepted for PDF when filename ends with `.pdf` (Swagger/client fallback)
   - Max size: 10 MB
 - Vendor supports upload/list/progress APIs.
 - Admin supports pending queue and approve/reject APIs.
