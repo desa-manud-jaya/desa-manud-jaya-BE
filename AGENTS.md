@@ -56,10 +56,9 @@ This document defines implementation conventions for contributors and AI/code ag
 2. Vendor APIs may show own `PENDING/REJECTED` items.
 3. Keep endpoint naming stable and REST-like.
 4. For multipart package creation:
-   - `data` (JSON request part)
+   - `data` (JSON request part, content-type must be `application/json`)
    - `requirementDocument` (file)
    - `photo` (file)
-   - Compatibility: `data` may arrive as `application/octet-stream` from Swagger/client tooling; backend should still parse it as JSON payload.
 
 ### Public approved-listing endpoints (current)
 - `GET /destinations/approved` → returns all approved destinations.
