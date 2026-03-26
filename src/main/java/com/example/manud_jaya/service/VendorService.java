@@ -46,7 +46,14 @@ public class VendorService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return businessRepository.save(business);
+        Business savedBusiness = businessRepository.save(business);
+        VendorProfile vendorProfile = vendor.getVendorProfile();
+        if (vendorProfile != null) {
+            vendorProfile.setBusinessId(savedBusiness.getId());
+        }
+        userRepository.save(vendor);
+
+        return savedBusiness;
     }
 
 
