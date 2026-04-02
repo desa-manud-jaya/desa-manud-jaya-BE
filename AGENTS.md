@@ -68,6 +68,9 @@ This document defines implementation conventions for contributors and AI/code ag
 - `GET /destinations/approved` → returns all approved destinations.
 - `GET /packages/approved` → returns all approved packages.
 - `GET /packages/approved/with-destinations` → returns one payload containing both approved packages and approved destinations.
+  - Supports optional pagination via `page` and `size`.
+  - `page` and `size` must be provided together (if only one is sent, return HTTP `400`).
+  - Response includes `page`, `size`, `totalPackages`, and `totalDestinations` metadata.
 
 ## 5) New Module Conventions (Implemented)
 ### Package lifecycle expansion
@@ -102,8 +105,19 @@ This document defines implementation conventions for contributors and AI/code ag
 ### Booking transactions and revenue
 - Canonical booking transaction collection: `transactions` (`BookingTransaction` entity).
 - Transaction must keep relations to both `User` and `Business` (id fields + Mongo references).
-- Default transaction status on booking creation is lowercase `pending`.
+- Booking payment lifecycle status is lowercase and follows:
+  - `waiting_for_payment` → right after booking creation
+  - `pending` → after user uploads payment proof
+  - `approved` / `rejected` → after admin review decision
 - User booking history endpoint is `/user/bookings/{userId}` and must enforce self-access only (JWT principal must match `userId`).
+  - This endpoint is the source for user-side booking progress tracking (including unfinished payment states).
+- User payment proof upload endpoint is `/user/bookings/{bookingId}/payment-proof`.
+  - Allowed when status is `waiting_for_payment`, then status transitions to `pending`.
+- Admin payment moderation endpoints:
+  - `GET /admin/bookings/payment` (list, optional status filter)
+  - `GET /admin/bookings/payment/{bookingId}` (detail)
+  - `PATCH /admin/bookings/payment/{bookingId}/decision` (approve/reject)
+- Vendor bookings endpoint `/vendor/bookings` must only expose `approved` booking transactions.
 - Admin revenue endpoint is `/admin/revenue/summary` with optional `startDate` + `endDate` filter in `yyyy-MM-dd` format.
 
 ## 6) Swagger / OpenAPI Rules
@@ -201,7 +215,7 @@ Do not commit real secrets into repository files.
 1. Do **not** push to remote repositories (including GitHub) unless the user explicitly asks for a push.
 2. If code changes are requested, prepare them locally first and wait for explicit approval before any `git push`.
 
-## 11) Implementation Status Snapshot (Mar 25, 2026)
+## 11) Implementation Status Snapshot (Apr 2, 2026)
 ### Implemented in current backend
 - Package lifecycle expansion:
   - Vendor update package
@@ -222,17 +236,21 @@ Do not commit real secrets into repository files.
   - package deletion requests
   - document verification requests
 - Moderation audit logging persistence (`moderation_audit_logs`)
-- Booking transaction and revenue features (PB-37 to PB-41):
-  - `transactions` collection with user/business relations and default status `pending`
-  - `POST /user/bookings` for booking creation with automatic `pending` status
+- Booking transaction and revenue features (PB-37 to PB-41 + payment moderation extension):
+  - `transactions` collection with user/business relations and payment moderation metadata
+  - `POST /user/bookings` for booking creation with automatic `waiting_for_payment` status
+  - `POST /user/bookings/{bookingId}/payment-proof` to upload proof and move status to `pending`
   - `GET /user/bookings/{userId}` for self booking history
+  - `GET /admin/bookings/payment` + `GET /admin/bookings/payment/{bookingId}` for admin visibility
+  - `PATCH /admin/bookings/payment/{bookingId}/decision` for approve/reject flow
+  - `GET /vendor/bookings` returns only `approved` booking transactions
   - `GET /admin/revenue/summary` for total revenue
   - Date-range filtering via `startDate` + `endDate` with format validation (`yyyy-MM-dd`)
-  - Unit tests for booking transaction service
+  - Unit tests for booking transaction and vendor operations services
 - Public approved listing endpoints:
   - `GET /destinations/approved`
   - `GET /packages/approved`
-  - `GET /packages/approved/with-destinations`
+  - `GET /packages/approved/with-destinations` (supports pagination via `page` and `size`, with totals in response)
 - Auth registration duplicate protection:
   - `/auth/register/user` and `/auth/register/vendor` reject duplicated username/email across all roles.
   - Duplicate identity errors are surfaced as HTTP `409 Conflict`.

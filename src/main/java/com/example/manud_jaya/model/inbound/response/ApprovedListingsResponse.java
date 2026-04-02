@@ -17,4 +17,8 @@ public class ApprovedListingsResponse {
 
     private List<Package> packages;
     private List<Destination> destinations;
+    private int page;
+    private int size;
+    private long totalPackages;
+    private long totalDestinations;
 }

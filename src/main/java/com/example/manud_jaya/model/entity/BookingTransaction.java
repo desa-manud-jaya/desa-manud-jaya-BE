@@ -28,9 +28,16 @@ public class BookingTransaction {
     private Double amount;
 
     @Builder.Default
-    private String status = "pending";
+    private String status = "waiting_for_payment";
+
+    private String paymentProofUrl;
+    private LocalDateTime paymentUploadedAt;
+    private LocalDateTime reviewedAt;
+    private String reviewedBy;
+    private String reviewNote;
 
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @DBRef(lazy = true)
     private User user;
