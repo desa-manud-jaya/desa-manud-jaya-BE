@@ -1,6 +1,7 @@
 package com.example.manud_jaya.service;
 
 import com.example.manud_jaya.configuration.security.JwtService;
+import com.example.manud_jaya.exception.ConflictException;
 import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.request.LoginRequest;
 import com.example.manud_jaya.model.inbound.request.UserRegisterRequest;
@@ -121,5 +122,53 @@ class AuthServiceTest {
                         && user.getVendorProfile() != null
                         && user.getVendorProfile().getApprovalStatus().equals("PLEASE_FILL_PROFILE")
         ));
+    }
+
+    @Test
+    void registerUserDuplicateUsernameThrowsConflict() {
+        UserRegisterRequest request = new UserRegisterRequest("newuser", "new@user.com", "secret");
+        when(userRepository.existsByUsernameIgnoreCase("newuser")).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> authService.registerUser(request));
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerUserDuplicateEmailThrowsConflict() {
+        UserRegisterRequest request = new UserRegisterRequest("newuser", "new@user.com", "secret");
+        when(userRepository.existsByEmailIgnoreCase("new@user.com")).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> authService.registerUser(request));
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerVendorDuplicateUsernameThrowsConflict() {
+        VendorRegisterRequest request = new VendorRegisterRequest();
+        request.setUsername("vendor1");
+        request.setEmail("vendor1@mail.com");
+        request.setPassword("secret");
+
+        when(userRepository.existsByUsernameIgnoreCase("vendor1")).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> authService.registerVendor(request));
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerVendorDuplicateEmailThrowsConflict() {
+        VendorRegisterRequest request = new VendorRegisterRequest();
+        request.setUsername("vendor1");
+        request.setEmail("vendor1@mail.com");
+        request.setPassword("secret");
+
+        when(userRepository.existsByEmailIgnoreCase("vendor1@mail.com")).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> authService.registerVendor(request));
+
+        verify(userRepository, never()).save(any());
     }
 }
