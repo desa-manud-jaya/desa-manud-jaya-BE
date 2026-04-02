@@ -22,7 +22,7 @@ public class VendorOperationsController {
     private final VendorOperationsService vendorOperationsService;
 
     @GetMapping("/bookings")
-    @Operation(summary = "Get vendor bookings")
+    @Operation(summary = "Get vendor bookings", description = "Get vendor bookings with payment status approved only.")
     public ResponseEntity<?> getBookings(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,

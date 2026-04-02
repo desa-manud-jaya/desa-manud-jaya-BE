@@ -1,5 +1,6 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ValidationException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.dto.DeletionRequestStatus;
 import com.example.manud_jaya.model.entity.Business;
@@ -284,6 +285,18 @@ public class VendorPackageService {
         return repository.findByApprovalStatus(ApprovalStatus.APPROVED.toString());
     }
 
+    public List<Package> getAllApprovedPackages(int page, int size) {
+        validatePagination(page, size);
+        return repository.findByApprovalStatus(
+                ApprovalStatus.APPROVED.toString(),
+                PageRequest.of(page, size)
+        );
+    }
+
+    public long countAllApprovedPackages() {
+        return repository.countByApprovalStatus(ApprovalStatus.APPROVED.toString());
+    }
+
     public PagedResponse<Package> getDeletionRequests(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         List<Package> items = repository.findByDeletionRequestStatus(DeletionRequestStatus.PENDING, pageable);
@@ -317,6 +330,16 @@ public class VendorPackageService {
 
         if (!business.getVendorId().equals(vendor.getId())) {
             throw new RuntimeException("Unauthorized access");
+        }
+    }
+
+    private void validatePagination(int page, int size) {
+        if (page < 0) {
+            throw new ValidationException("page must be greater than or equal to 0");
+        }
+
+        if (size <= 0) {
+            throw new ValidationException("size must be greater than 0");
         }
     }
 }

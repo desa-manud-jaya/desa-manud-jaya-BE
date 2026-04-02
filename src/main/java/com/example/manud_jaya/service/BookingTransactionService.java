@@ -17,21 +17,30 @@ import com.example.manud_jaya.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class BookingTransactionService {
 
+    private static final String STATUS_WAITING_FOR_PAYMENT = "waiting_for_payment";
+    private static final String STATUS_PENDING = "pending";
+    private static final String STATUS_APPROVED = "approved";
+    private static final String STATUS_REJECTED = "rejected";
+
     private final BookingTransactionRepository bookingTransactionRepository;
     private final UserRepository userRepository;
     private final BusinessRepository businessRepository;
     private final PackageRepository packageRepository;
+    private final SupabaseStorageService supabaseStorageService;
 
     public BookingTransaction createBooking(String username, CreateBookingRequest request) {
         validateCreateRequest(request);
@@ -58,8 +67,9 @@ public class BookingTransactionService {
                 .packageId(pkg.getId())
                 .quantity(request.getQuantity())
                 .amount(totalAmount)
-                .status("pending")
+                .status(STATUS_WAITING_FOR_PAYMENT)
                 .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .user(user)
                 .business(business)
                 .build();
@@ -67,7 +77,36 @@ public class BookingTransactionService {
         return bookingTransactionRepository.save(transaction);
     }
 
+    public BookingTransaction uploadPaymentProof(String username, String bookingId, MultipartFile file) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        BookingTransaction transaction = bookingTransactionRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        if (!user.getId().equals(transaction.getUserId())) {
+            throw new UnauthorizedException("You can only upload payment proof for your own booking");
+        }
+
+        if (!STATUS_WAITING_FOR_PAYMENT.equals(transaction.getStatus())) {
+            throw new ValidationException("Payment proof can only be uploaded when booking status is waiting_for_payment");
+        }
+
+        try {
+            String proofUrl = supabaseStorageService.uploadDocument(file);
+            transaction.setPaymentProofUrl(proofUrl);
+            transaction.setPaymentUploadedAt(LocalDateTime.now());
+            transaction.setStatus(STATUS_PENDING);
+            transaction.setUpdatedAt(LocalDateTime.now());
+            return bookingTransactionRepository.save(transaction);
+        } catch (IOException ex) {
+            throw new ValidationException("Failed to upload payment proof", ex);
+        }
+    }
+
     public PagedResponse<BookingTransaction> getUserBookingHistory(String username, String userId, int page, int size) {
+        validatePagination(page, size);
+
         User currentUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -76,6 +115,96 @@ public class BookingTransactionService {
         }
 
         var data = bookingTransactionRepository.findByUserId(userId, PageRequest.of(page, size));
+        return PagedResponse.<BookingTransaction>builder()
+                .items(data.getContent())
+                .page(page)
+                .size(size)
+                .total(data.getTotalElements())
+                .build();
+    }
+
+    public PagedResponse<BookingTransaction> getAdminBookingPayments(String status, int page, int size) {
+        validatePagination(page, size);
+
+        var pageable = PageRequest.of(page, size);
+        var data = (status == null || status.isBlank())
+                ? bookingTransactionRepository.findAll(pageable)
+                : bookingTransactionRepository.findByStatus(status.trim().toLowerCase(), pageable);
+
+        return PagedResponse.<BookingTransaction>builder()
+                .items(data.getContent())
+                .page(page)
+                .size(size)
+                .total(data.getTotalElements())
+                .build();
+    }
+
+    public BookingTransaction getAdminBookingPaymentDetail(String bookingId) {
+        return bookingTransactionRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+    }
+
+    public BookingTransaction reviewBookingPayment(String adminUsername, String bookingId, String decision, String note) {
+        User admin = userRepository.findByUsername(adminUsername)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
+
+        BookingTransaction transaction = bookingTransactionRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        if (!STATUS_PENDING.equals(transaction.getStatus())) {
+            throw new ValidationException("Only pending booking payments can be reviewed");
+        }
+
+        if (decision == null || decision.isBlank()) {
+            throw new ValidationException("decision is required");
+        }
+
+        String normalizedDecision = decision.trim().toUpperCase();
+        if ("APPROVE".equals(normalizedDecision)) {
+            transaction.setStatus(STATUS_APPROVED);
+        } else if ("REJECT".equals(normalizedDecision)) {
+            if (note == null || note.isBlank()) {
+                throw new ValidationException("note is required for reject decision");
+            }
+            transaction.setStatus(STATUS_REJECTED);
+        } else {
+            throw new ValidationException("decision must be APPROVE or REJECT");
+        }
+
+        transaction.setReviewedAt(LocalDateTime.now());
+        transaction.setReviewedBy(admin.getId());
+        transaction.setReviewNote(note);
+        transaction.setUpdatedAt(LocalDateTime.now());
+
+        return bookingTransactionRepository.save(transaction);
+    }
+
+    public PagedResponse<BookingTransaction> getVendorApprovedBookings(String username, int page, int size) {
+        validatePagination(page, size);
+
+        User vendor = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
+
+        List<String> businessIds = businessRepository.findByVendorId(vendor.getId())
+                .stream()
+                .map(Business::getId)
+                .toList();
+
+        if (businessIds.isEmpty()) {
+            return PagedResponse.<BookingTransaction>builder()
+                    .items(Collections.emptyList())
+                    .page(page)
+                    .size(size)
+                    .total(0)
+                    .build();
+        }
+
+        var data = bookingTransactionRepository.findByBusinessIdInAndStatus(
+                businessIds,
+                STATUS_APPROVED,
+                PageRequest.of(page, size)
+        );
+
         return PagedResponse.<BookingTransaction>builder()
                 .items(data.getContent())
                 .page(page)
@@ -140,6 +269,16 @@ public class BookingTransactionService {
 
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new ValidationException("quantity must be greater than 0");
+        }
+    }
+
+    private void validatePagination(int page, int size) {
+        if (page < 0) {
+            throw new ValidationException("page must be greater than or equal to 0");
+        }
+
+        if (size <= 0) {
+            throw new ValidationException("size must be greater than 0");
         }
     }
 }

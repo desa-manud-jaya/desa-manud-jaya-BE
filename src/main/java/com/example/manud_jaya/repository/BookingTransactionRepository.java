@@ -14,5 +14,9 @@ public interface BookingTransactionRepository extends MongoRepository<BookingTra
 
     Page<BookingTransaction> findByUserId(String userId, Pageable pageable);
 
+    Page<BookingTransaction> findByStatus(String status, Pageable pageable);
+
+    Page<BookingTransaction> findByBusinessIdInAndStatus(List<String> businessIds, String status, Pageable pageable);
+
     List<BookingTransaction> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 }
