@@ -12,6 +12,10 @@ import java.util.Optional;
 public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByUsername(String username);
 
+    boolean existsByUsernameIgnoreCase(String username);
+
+    boolean existsByEmailIgnoreCase(String email);
+
     List<User> findByRoleAndVendorProfileApprovalStatus(
             String role,
             ApprovalStatus approvalStatus

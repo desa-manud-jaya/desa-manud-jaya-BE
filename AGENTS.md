@@ -34,6 +34,10 @@ This document defines implementation conventions for contributors and AI/code ag
 - Roles remain `ADMIN`, `USER`, `VENDOR` only for now.
 - No `CS` role implementation in current phase.
 - Login identifier remains **username + password** for now.
+- Registration identity must be globally unique across all roles:
+  - `username` cannot be reused between USER/VENDOR/ADMIN accounts.
+  - `email` cannot be reused between USER/VENDOR/ADMIN accounts.
+  - Duplicate registration attempts must fail with HTTP `409 Conflict`.
 
 ### Vendor status lifecycle
 - `PLEASE_FILL_PROFILE` → after vendor registration
@@ -229,6 +233,9 @@ Do not commit real secrets into repository files.
   - `GET /destinations/approved`
   - `GET /packages/approved`
   - `GET /packages/approved/with-destinations`
+- Auth registration duplicate protection:
+  - `/auth/register/user` and `/auth/register/vendor` reject duplicated username/email across all roles.
+  - Duplicate identity errors are surfaced as HTTP `409 Conflict`.
 
 ### Intentionally not implemented in current phase
 - CS role introduction
