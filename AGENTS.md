@@ -87,11 +87,16 @@ This document defines implementation conventions for contributors and AI/code ag
 ### Vendor document verification
 - `VendorDocument` is the canonical document verification entity.
 - Document upload validation:
-  - Allowed: PDF/JPG/JPEG/PNG
+  - Allowed: PDF/DOC/DOCX/JPG/JPEG/PNG
   - Compatibility: `application/octet-stream` is accepted for PDF when filename ends with `.pdf` (Swagger/client fallback)
   - Max size: 10 MB
 - Vendor supports upload/list/progress APIs.
 - Admin supports pending queue and approve/reject APIs.
+
+### Global runtime exception response behavior
+- `GlobalExceptionHandler` must return the runtime exception message for `RuntimeException` when message is present.
+- If runtime exception message is null/blank, fallback to: `An unexpected error occurred`.
+- Non-runtime generic exceptions (`Exception`) continue using the safe default message.
 
 ### Analytics and approval center
 - Dashboard analytics endpoints exist for `/vendor/dashboard/analytics` and `/admin/dashboard/analytics`.
@@ -215,7 +220,7 @@ Do not commit real secrets into repository files.
 1. Do **not** push to remote repositories (including GitHub) unless the user explicitly asks for a push.
 2. If code changes are requested, prepare them locally first and wait for explicit approval before any `git push`.
 
-## 11) Implementation Status Snapshot (Apr 2, 2026)
+## 11) Implementation Status Snapshot (Apr 5, 2026)
 ### Implemented in current backend
 - Package lifecycle expansion:
   - Vendor update package
@@ -254,6 +259,15 @@ Do not commit real secrets into repository files.
 - Auth registration duplicate protection:
   - `/auth/register/user` and `/auth/register/vendor` reject duplicated username/email across all roles.
   - Duplicate identity errors are surfaced as HTTP `409 Conflict`.
+- Document upload format expansion:
+  - `SupabaseStorageService#uploadDocument` accepts DOC (`application/msword`) and DOCX (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`) in addition to existing formats.
+  - Validation message updated to: `Invalid document type. Supported: PDF/DOC/DOCX/JPG/JPEG/PNG`.
+  - Unit tests updated in `SupabaseStorageServiceTest` to verify Word support.
+- Global runtime exception handling improvement:
+  - `GlobalExceptionHandler` has dedicated `@ExceptionHandler(RuntimeException.class)`.
+  - Runtime messages are returned as API error message when non-blank (example: `Invalid password`).
+  - Null/blank runtime message falls back to `An unexpected error occurred`.
+  - Unit tests added in `GlobalExceptionHandlerTest`.
 
 ### Intentionally not implemented in current phase
 - CS role introduction
