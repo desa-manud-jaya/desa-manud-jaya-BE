@@ -53,13 +53,22 @@ class SupabaseStorageServiceTest {
     }
 
     @Test
-    void uploadDocumentShouldSupportPdfJpgPngAndOctetPdf() throws Exception {
+    void uploadDocumentShouldSupportPdfWordJpgPngAndOctetPdf() throws Exception {
         MockMultipartFile pdf = new MockMultipartFile("file", "a.pdf", "application/pdf", "abc".getBytes());
+        MockMultipartFile doc = new MockMultipartFile("file", "a.doc", "application/msword", "abc".getBytes());
+        MockMultipartFile docx = new MockMultipartFile(
+                "file",
+                "a.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "abc".getBytes()
+        );
         MockMultipartFile jpg = new MockMultipartFile("file", "a.jpg", "image/jpeg", "abc".getBytes());
         MockMultipartFile png = new MockMultipartFile("file", "a.png", "image/png", "abc".getBytes());
         MockMultipartFile octetPdf = new MockMultipartFile("file", "a.pdf", "application/octet-stream", "abc".getBytes());
 
         assertTrue(supabaseStorageService.uploadDocument(pdf).contains("/documents/"));
+        assertTrue(supabaseStorageService.uploadDocument(doc).contains("/documents/"));
+        assertTrue(supabaseStorageService.uploadDocument(docx).contains("/documents/"));
         assertTrue(supabaseStorageService.uploadDocument(jpg).contains("/documents/"));
         assertTrue(supabaseStorageService.uploadDocument(png).contains("/documents/"));
         assertTrue(supabaseStorageService.uploadDocument(octetPdf).contains("/documents/"));
@@ -69,6 +78,20 @@ class SupabaseStorageServiceTest {
     void uploadDocumentInvalidTypeShouldThrow() {
         MockMultipartFile file = new MockMultipartFile("file", "a.gif", "image/gif", "abc".getBytes());
         assertThrows(RuntimeException.class, () -> supabaseStorageService.uploadDocument(file));
+    }
+
+    @Test
+    void uploadDocumentWordFormatsShouldBeAccepted() throws Exception {
+        MockMultipartFile doc = new MockMultipartFile("file", "a.doc", "application/msword", "abc".getBytes());
+        MockMultipartFile docx = new MockMultipartFile(
+                "file",
+                "a.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "abc".getBytes()
+        );
+
+        assertTrue(supabaseStorageService.uploadDocument(doc).contains("/documents/"));
+        assertTrue(supabaseStorageService.uploadDocument(docx).contains("/documents/"));
     }
 
     @Test

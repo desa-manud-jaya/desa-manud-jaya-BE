@@ -87,8 +87,11 @@ public class SupabaseStorageService {
                 || "image/jpg".equals(contentType)
                 || "image/png".equals(contentType);
 
-        if (!isPdf && !isSupportedImage) {
-            throw new RuntimeException("Invalid document type. Supported: PDF/JPG/JPEG/PNG");
+        boolean isWord = "application/msword".equals(contentType)
+                || "application/vnd.openxmlformats-officedocument.wordprocessingml.document".equals(contentType);
+
+        if (!isPdf && !isSupportedImage && !isWord) {
+            throw new RuntimeException("Invalid document type. Supported: PDF/DOC/DOCX/JPG/JPEG/PNG");
         }
     }
 
