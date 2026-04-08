@@ -26,6 +26,7 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "Login", description = "Authenticate with username and password, then receive JWT token.")
     @ApiResponse(responseCode = "200", description = "Login successful")
+    @ApiResponse(responseCode = "401", description = "Authentication failed: user not found, rejected, or invalid password")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
 
         LoginResponse response = authService.login(request);

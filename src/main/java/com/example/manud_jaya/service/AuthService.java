@@ -2,6 +2,7 @@ package com.example.manud_jaya.service;
 
 import com.example.manud_jaya.configuration.security.JwtService;
 import com.example.manud_jaya.exception.ConflictException;
+import com.example.manud_jaya.exception.UnauthorizedException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.dto.VendorProfile;
 import com.example.manud_jaya.model.entity.User;
@@ -54,14 +55,14 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
 
-        if (user.getStatus().equals(ApprovalStatus.REJECTED)) {
-            throw new RuntimeException("User is rejected");
+        if (ApprovalStatus.REJECTED.name().equals(user.getStatus())) {
+            throw new UnauthorizedException("User is rejected");
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
+            throw new UnauthorizedException("Invalid password");
         }
 
         String token = jwtService.generateToken(user);
