@@ -29,7 +29,6 @@ public class VendorProfile {
     private String phone;
     private String ktpNumber;
     private String address;
-    private String businessId;
     private String approvalStatus; // PENDING, APPROVED, PLEASE_FILL_PROFILE
     private LocalDateTime approvedAt;
 

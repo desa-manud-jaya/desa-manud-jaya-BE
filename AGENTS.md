@@ -25,20 +25,7 @@ This document defines implementation conventions for contributors and AI/code ag
    - `/swagger-ui/**`
    - `/swagger-ui.html`
 
-### Temporary exception (project decision)
-- `GET /vendor/{vendorId}/business` is currently kept as-is for compatibility with existing frontend behavior.
-- This endpoint is an explicit exception to rule #1/#2 above and must be treated as technical debt to be revisited later.
-
 ## 3) Domain Conventions
-### Auth model scope (current)
-- Roles remain `ADMIN`, `USER`, `VENDOR` only for now.
-- No `CS` role implementation in current phase.
-- Login identifier remains **username + password** for now.
-- Registration identity must be globally unique across all roles:
-  - `username` cannot be reused between USER/VENDOR/ADMIN accounts.
-  - `email` cannot be reused between USER/VENDOR/ADMIN accounts.
-  - Duplicate registration attempts must fail with HTTP `409 Conflict`.
-
 ### Vendor status lifecycle
 - `PLEASE_FILL_PROFILE` → after vendor registration
 - `PENDING` → after vendor completes profile form
@@ -60,72 +47,11 @@ This document defines implementation conventions for contributors and AI/code ag
 2. Vendor APIs may show own `PENDING/REJECTED` items.
 3. Keep endpoint naming stable and REST-like.
 4. For multipart package creation:
-   - `data` (JSON request part, content-type must be `application/json`)
+   - `data` (JSON request part)
    - `requirementDocument` (file)
    - `photo` (file)
 
-### Public approved-listing endpoints (current)
-- `GET /destinations/approved` → returns all approved destinations.
-- `GET /packages/approved` → returns all approved packages.
-- `GET /packages/approved/with-destinations` → returns one payload containing both approved packages and approved destinations.
-  - Supports optional pagination via `page` and `size`.
-  - `page` and `size` must be provided together (if only one is sent, return HTTP `400`).
-  - Response includes `page`, `size`, `totalPackages`, and `totalDestinations` metadata.
-
-## 5) New Module Conventions (Implemented)
-### Package lifecycle expansion
-- Vendor package endpoints now support:
-  - update package,
-  - submit deletion request,
-  - filtered/paginated listing.
-- Admin package endpoints now support:
-  - package detail for review,
-  - deletion request queue,
-  - deletion approve/reject actions.
-- Package entity includes moderation metadata (`updatedAt`, deletion request status/review info, moderation notes).
-
-### Vendor document verification
-- `VendorDocument` is the canonical document verification entity.
-- Document upload validation:
-  - Allowed: PDF/DOC/DOCX/JPG/JPEG/PNG
-  - Compatibility: `application/octet-stream` is accepted for PDF when filename ends with `.pdf` (Swagger/client fallback)
-  - Max size: 10 MB
-- Vendor supports upload/list/progress APIs.
-- Admin supports pending queue and approve/reject APIs.
-
-### Global runtime exception response behavior
-- `GlobalExceptionHandler` must return the runtime exception message for `RuntimeException` when message is present.
-- If runtime exception message is null/blank, fallback to: `An unexpected error occurred`.
-- Non-runtime generic exceptions (`Exception`) continue using the safe default message.
-
-### Analytics and approval center
-- Dashboard analytics endpoints exist for `/vendor/dashboard/analytics` and `/admin/dashboard/analytics`.
-- Impact analytics endpoint exists for `/vendor/impact-analytics`.
-- Consolidated admin queue endpoint exists at `/admin/approval-center` for partner/package/deletion/document requests.
-
-### Audit logging
-- Moderation actions are persisted into `moderation_audit_logs`.
-- Prefer logging all approve/reject/request-d-eletion/document-review operations.
-
-### Booking transactions and revenue
-- Canonical booking transaction collection: `transactions` (`BookingTransaction` entity).
-- Transaction must keep relations to both `User` and `Business` (id fields + Mongo references).
-- Booking payment lifecycle status is lowercase and follows:
-  - `waiting_for_payment` → right after booking creation
-  - `pending` → after user uploads payment proof
-  - `approved` / `rejected` → after admin review decision
-- User booking history endpoint is `/user/bookings/{userId}` and must enforce self-access only (JWT principal must match `userId`).
-  - This endpoint is the source for user-side booking progress tracking (including unfinished payment states).
-- User payment proof upload endpoint is `/user/bookings/{bookingId}/payment-proof`.
-  - Allowed when status is `waiting_for_payment`, then status transitions to `pending`.
-- Admin payment moderation endpoints:
-  - `GET /admin/bookings/payment` (list, optional status filter)
-  - `GET /admin/bookings/payment/{bookingId}` (detail)
-  - `PATCH /admin/bookings/payment/{bookingId}/decision` (approve/reject)
-- Vendor bookings endpoint `/vendor/bookings` must only expose `approved` booking transactions.
-- Admin revenue endpoint is `/admin/revenue/summary` with optional `startDate` + `endDate` filter in `yyyy-MM-dd` format.
-
-## 6) Swagger / OpenAPI Rules
+## 5) Swagger / OpenAPI Rules
 1. Every new endpoint must include OpenAPI annotations:
    - `@Operation`
    - `@ApiResponse` / `@ApiResponses`
@@ -138,7 +64,7 @@ This document defines implementation conventions for contributors and AI/code ag
    - **Prod Swagger UI:** `https://desa-manud-jaya-backend.up.railway.app/swagger-ui/index.html`
    - **Prod OpenAPI docs:** `https://desa-manud-jaya-backend.up.railway.app/v3/api-docs`
 
-## 7) Environment & Deployment Profiles
+## 6) Environment & Deployment Profiles
 Use Spring profiles and environment-variable separation:
 
 - `application-local.yml` → `LOCAL_*`
@@ -205,75 +131,17 @@ If Railway performs the actual runtime/deploy, mirror the same variable names in
 
 Do not commit real secrets into repository files.
 
-## 8) Testing Rules
+## 7) Testing Rules
 1. Keep tests aligned with current service/controller signatures.
 2. Prefer focused unit tests for service logic and ownership checks.
 3. Any change to moderation/status flows must include test coverage.
 4. `mvn test` must pass before merge.
 
-## 9) Coding Style Notes
+## 8) Coding Style Notes
 - Use descriptive runtime errors or custom exceptions for domain errors.
 - Keep string literals for status centralized via enums where practical.
 - Avoid dead imports/unused dependencies in controllers/services.
 
-## 10) Git Operation Policy
+## 9) Git Operation Policy
 1. Do **not** push to remote repositories (including GitHub) unless the user explicitly asks for a push.
 2. If code changes are requested, prepare them locally first and wait for explicit approval before any `git push`.
-
-## 11) Implementation Status Snapshot (Apr 5, 2026)
-### Implemented in current backend
-- Package lifecycle expansion:
-  - Vendor update package
-  - Vendor deletion request submission
-  - Admin deletion request moderation (approve/reject)
-  - Package detail support for moderation
-- Vendor document verification domain:
-  - `VendorDocument` entity + repository + services
-  - Vendor upload/list/progress APIs
-  - Admin pending queue + approve/reject APIs
-- Dashboard and operations APIs:
-  - Vendor dashboard analytics + impact analytics
-  - Admin dashboard analytics
-  - Vendor/Admin bookings and reviews listing APIs
-- Unified admin approval center endpoint:
-  - partner requests
-  - package requests
-  - package deletion requests
-  - document verification requests
-- Moderation audit logging persistence (`moderation_audit_logs`)
-- Booking transaction and revenue features (PB-37 to PB-41 + payment moderation extension):
-  - `transactions` collection with user/business relations and payment moderation metadata
-  - `POST /user/bookings` for booking creation with automatic `waiting_for_payment` status
-  - `POST /user/bookings/{bookingId}/payment-proof` to upload proof and move status to `pending`
-  - `GET /user/bookings/{userId}` for self booking history
-  - `GET /admin/bookings/payment` + `GET /admin/bookings/payment/{bookingId}` for admin visibility
-  - `PATCH /admin/bookings/payment/{bookingId}/decision` for approve/reject flow
-  - `GET /vendor/bookings` returns only `approved` booking transactions
-  - `GET /admin/revenue/summary` for total revenue
-  - Date-range filtering via `startDate` + `endDate` with format validation (`yyyy-MM-dd`)
-  - Unit tests for booking transaction and vendor operations services
-- Public approved listing endpoints:
-  - `GET /destinations/approved`
-  - `GET /packages/approved`
-  - `GET /packages/approved/with-destinations` (supports pagination via `page` and `size`, with totals in response)
-- Auth registration duplicate protection:
-  - `/auth/register/user` and `/auth/register/vendor` reject duplicated username/email across all roles.
-  - Duplicate identity errors are surfaced as HTTP `409 Conflict`.
-- Document upload format expansion:
-  - `SupabaseStorageService#uploadDocument` accepts DOC (`application/msword`) and DOCX (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`) in addition to existing formats.
-  - Validation message updated to: `Invalid document type. Supported: PDF/DOC/DOCX/JPG/JPEG/PNG`.
-  - Unit tests updated in `SupabaseStorageServiceTest` to verify Word support.
-- Global runtime exception handling improvement:
-  - `GlobalExceptionHandler` has dedicated `@ExceptionHandler(RuntimeException.class)`.
-  - Runtime messages are returned as API error message when non-blank (example: `Invalid password`).
-  - Null/blank runtime message falls back to `An unexpected error occurred`.
-  - Unit tests added in `GlobalExceptionHandlerTest`.
-
-### Intentionally not implemented in current phase
-- CS role introduction
-- Login identity migration (still username/password)
-- Refactor of `GET /vendor/{vendorId}/business` (explicitly deferred)
-
-### Validation baseline
-- `mvn -q -DskipTests compile` passes
-- `mvn test -q` passes

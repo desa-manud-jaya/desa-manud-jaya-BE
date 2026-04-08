@@ -72,19 +72,13 @@ class AdminServiceTest {
     @Test
     void approveVendorSuccessCreatesBusinessWhenMissing() {
         when(userRepository.findById("vendor-1")).thenReturn(Optional.of(pendingVendor));
-        when(businessRepository.findFirstByVendorId("vendor-1")).thenReturn(Optional.empty());
-        when(businessRepository.save(any(Business.class))).thenAnswer(invocation -> {
-            Business business = invocation.getArgument(0);
-            business.setId("business-1");
-            return business;
-        });
+        when(businessRepository.findByVendorId("vendor-1")).thenReturn(Optional.empty());
 
         adminService.approveVendor("vendor-1", "admin-1");
 
         assertEquals("APPROVED", pendingVendor.getVendorProfile().getApprovalStatus());
         assertEquals("ACTIVE", pendingVendor.getStatus());
         assertNotNull(pendingVendor.getVendorProfile().getApprovedAt());
-        assertEquals("business-1", pendingVendor.getVendorProfile().getBusinessId());
 
         verify(businessRepository, times(1)).save(argThat((Business business) ->
                 business.getVendorId().equals("vendor-1")
@@ -96,12 +90,11 @@ class AdminServiceTest {
     @Test
     void approveVendorSkipsBusinessCreationWhenAlreadyExists() {
         when(userRepository.findById("vendor-1")).thenReturn(Optional.of(pendingVendor));
-        when(businessRepository.findFirstByVendorId("vendor-1"))
+        when(businessRepository.findByVendorId("vendor-1"))
                 .thenReturn(Optional.of(Business.builder().id("b-1").vendorId("vendor-1").build()));
 
         adminService.approveVendor("vendor-1", "admin-1");
 
-        assertEquals("b-1", pendingVendor.getVendorProfile().getBusinessId());
         verify(businessRepository, never()).save(any(Business.class));
         verify(userRepository, times(1)).save(pendingVendor);
     }

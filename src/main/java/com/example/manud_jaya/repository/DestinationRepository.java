@@ -1,7 +1,6 @@
 package com.example.manud_jaya.repository;
 
 import com.example.manud_jaya.model.entity.Destination;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,10 +13,6 @@ public interface DestinationRepository extends MongoRepository<Destination, Stri
     List<Destination> findByBusinessId(String businessId);
 
     List<Destination> findByApprovalStatus(String approvalStatus);
-
-    List<Destination> findByApprovalStatus(String approvalStatus, Pageable pageable);
-
-    long countByApprovalStatus(String approvalStatus);
 
     List<Destination> findByBusinessIdAndApprovalStatus(String businessId, String approvalStatus);
 

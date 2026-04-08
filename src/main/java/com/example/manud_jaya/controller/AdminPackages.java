@@ -1,7 +1,5 @@
 package com.example.manud_jaya.controller;
 
-import com.example.manud_jaya.model.entity.User;
-import com.example.manud_jaya.service.AuthService;
 import com.example.manud_jaya.service.VendorPackageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,7 +9,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 public class AdminPackages {
 
     private final VendorPackageService service;
-    private final AuthService authService;
 
     @PutMapping("/{id}/approve")
     @Operation(summary = "Approve package", description = "Approve a pending package.")
@@ -30,12 +26,8 @@ public class AdminPackages {
             @ApiResponse(responseCode = "200", description = "Package approved"),
             @ApiResponse(responseCode = "404", description = "Package not found")
     })
-    public ResponseEntity<?> approve(
-            @Parameter(description = "Package ID") @PathVariable String id,
-            Authentication authentication
-    ) {
-        User admin = authService.getUser(authentication.getName());
-        service.approve(id, admin.getId(), null);
+    public ResponseEntity<?> approve(@Parameter(description = "Package ID") @PathVariable String id) {
+        service.approve(id);
         return ResponseEntity.ok("Approved");
     }
 
@@ -48,11 +40,9 @@ public class AdminPackages {
     })
     public ResponseEntity<?> reject(
             @Parameter(description = "Package ID") @PathVariable String id,
-            @Parameter(description = "Mandatory rejection reason") @RequestParam String reason,
-            Authentication authentication
+            @Parameter(description = "Mandatory rejection reason") @RequestParam String reason
     ) {
-        User admin = authService.getUser(authentication.getName());
-        service.reject(id, reason, admin.getId());
+        service.reject(id, reason);
         return ResponseEntity.ok("Rejected");
     }
 
@@ -61,42 +51,5 @@ public class AdminPackages {
     @ApiResponse(responseCode = "200", description = "Pending packages retrieved")
     public ResponseEntity<?> pending() {
         return ResponseEntity.ok(service.getPending());
-    }
-
-    @GetMapping("/{id}")
-    @Operation(summary = "Get package detail for moderation")
-    public ResponseEntity<?> detail(@PathVariable String id) {
-        return ResponseEntity.ok(service.getPackageDetail(id));
-    }
-
-    @GetMapping("/deletion-requests")
-    @Operation(summary = "Get package deletion requests queue")
-    public ResponseEntity<?> deletionRequests(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(service.getDeletionRequests(page, size));
-    }
-
-    @PutMapping("/{id}/deletion-approve")
-    @Operation(summary = "Approve package deletion request")
-    public ResponseEntity<?> approveDeletion(
-            @PathVariable String id,
-            @RequestParam(required = false) String note,
-            Authentication authentication
-    ) {
-        User admin = authService.getUser(authentication.getName());
-        return ResponseEntity.ok(service.approveDeletionRequest(id, admin.getId(), note));
-    }
-
-    @PutMapping("/{id}/deletion-reject")
-    @Operation(summary = "Reject package deletion request")
-    public ResponseEntity<?> rejectDeletion(
-            @PathVariable String id,
-            @RequestParam String reason,
-            Authentication authentication
-    ) {
-        User admin = authService.getUser(authentication.getName());
-        return ResponseEntity.ok(service.rejectDeletionRequest(id, admin.getId(), reason));
     }
 }

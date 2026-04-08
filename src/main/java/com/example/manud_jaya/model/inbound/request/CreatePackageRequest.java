@@ -21,7 +21,4 @@ public class CreatePackageRequest {
     private Integer availability;
     private List<String> itinerary;
     private List<String> included;
-    private String termsAndConditions;
-    private String pricingPolicy;
-    private String cancellationPolicy;
 }

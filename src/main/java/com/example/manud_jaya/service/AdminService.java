@@ -8,7 +8,6 @@ import com.example.manud_jaya.model.inbound.response.VendorPendingResponse;
 import com.example.manud_jaya.repository.BusinessRepository;
 import com.example.manud_jaya.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -20,9 +19,6 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final BusinessRepository businessRepository;
-
-    @Autowired(required = false)
-    private ModerationAuditService moderationAuditService;
 
     public List<VendorPendingResponse> getPendingVendors() {
 
@@ -79,27 +75,20 @@ public class AdminService {
         user.setStatus("ACTIVE");
         user.setUpdatedAt(LocalDateTime.now());
 
-        Business linkedBusiness = businessRepository.findFirstByVendorId(user.getId())
-                .orElseGet(() -> {
-                    Business business = Business.builder()
-                            .vendorId(user.getId())
-                            .name(profile.getVendorName())
-                            .description(profile.getDescription())
-                            .address(profile.getAddress())
-                            .approvalStatus(String.valueOf(ApprovalStatus.APPROVED))
-                            .createdAt(LocalDateTime.now())
-                            .build();
+        if (businessRepository.findByVendorId(user.getId()).isEmpty()) {
+            Business business = Business.builder()
+                    .vendorId(user.getId())
+                    .name(profile.getVendorName())
+                    .description(profile.getDescription())
+                    .address(profile.getAddress())
+                    .approvalStatus(String.valueOf(ApprovalStatus.APPROVED))
+                    .createdAt(LocalDateTime.now())
+                    .build();
 
-                    return businessRepository.save(business);
-                });
-
-        profile.setBusinessId(linkedBusiness.getId());
+            businessRepository.save(business);
+        }
 
         userRepository.save(user);
-
-        if (moderationAuditService != null) {
-            moderationAuditService.log("VENDOR", "APPROVE", adminId, user.getId(), "Vendor approved");
-        }
     }
 
     public void rejectVendor(String userId, String adminId) {
@@ -116,10 +105,6 @@ public class AdminService {
         user.setUpdatedAt(LocalDateTime.now());
 
         userRepository.save(user);
-
-        if (moderationAuditService != null) {
-            moderationAuditService.log("VENDOR", "REJECT", adminId, user.getId(), "Vendor rejected");
-        }
     }
 
 }

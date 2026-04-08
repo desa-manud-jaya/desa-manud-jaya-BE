@@ -3,7 +3,6 @@ package com.example.manud_jaya.controller;
 import com.example.manud_jaya.service.PublicDestinationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,13 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class PublicDestinationController {
 
     private final PublicDestinationService destinationService;
-
-    @GetMapping("/destinations/approved")
-    @Operation(summary = "Get all approved destinations", description = "Get all destinations with APPROVED status.")
-    @ApiResponse(responseCode = "200", description = "Approved destinations retrieved")
-    public ResponseEntity<?> getAllApprovedDestinations() {
-        return ResponseEntity.ok(destinationService.getAllApprovedDestinations());
-    }
 
     @GetMapping("/businesses/{businessId}/destinations")
     @Operation(summary = "Get destinations by business")

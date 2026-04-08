@@ -11,12 +11,7 @@ import java.util.Optional;
 @Repository
 public interface BookingRepository extends MongoRepository<Booking, String> {
     List<Booking> findByUserId(String userId, Pageable pageable);
-
     Optional<Booking> findByTripId(String tripId);
-
-    List<Booking> findByTripIdIn(List<String> tripIds);
-
     List<Booking> findByBookingStatus(String status, Pageable pageable);
-
     List<Booking> findByUserId(String userId);
 }

@@ -11,14 +11,8 @@ import java.util.Optional;
 @Repository
 public interface ReviewRepository extends MongoRepository<Review, String> {
     List<Review> findByUserId(String userId, Pageable pageable);
-
     List<Review> findByDestinationId(String destinationId, Pageable pageable);
-
     Optional<Review> findByUserIdAndDestinationId(String userId, String destinationId);
-
     List<Review> findByDestinationId(String destinationId);
-
-    List<Review> findByDestinationIdIn(List<String> destinationIds);
-
     List<Review> findByUserId(String userId);
 }

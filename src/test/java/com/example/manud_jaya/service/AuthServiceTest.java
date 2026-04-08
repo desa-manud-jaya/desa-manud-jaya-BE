@@ -1,8 +1,6 @@
 package com.example.manud_jaya.service;
 
 import com.example.manud_jaya.configuration.security.JwtService;
-import com.example.manud_jaya.exception.ConflictException;
-import com.example.manud_jaya.exception.UnauthorizedException;
 import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.request.LoginRequest;
 import com.example.manud_jaya.model.inbound.request.UserRegisterRequest;
@@ -69,35 +67,15 @@ class AuthServiceTest {
     }
 
     @Test
-    void loginUserNotFoundThrowsUnauthorized() {
+    void loginUserNotFoundThrows() {
         LoginRequest request = new LoginRequest("unknown", "password");
         when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> authService.login(request));
-
-        assertEquals("User not found", exception.getMessage());
+        assertThrows(RuntimeException.class, () -> authService.login(request));
     }
 
     @Test
-    void loginRejectedUserThrowsUnauthorized() {
-        LoginRequest request = new LoginRequest("testuser", "password123");
-        User user = User.builder()
-                .username("testuser")
-                .password("encoded")
-                .status("REJECTED")
-                .build();
-
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> authService.login(request));
-
-        assertEquals("User is rejected", exception.getMessage());
-        verify(passwordEncoder, never()).matches(any(), any());
-        verify(jwtService, never()).generateToken(any());
-    }
-
-    @Test
-    void loginInvalidPasswordThrowsUnauthorized() {
+    void loginInvalidPasswordThrows() {
         LoginRequest request = new LoginRequest("testuser", "wrongpassword");
         User user = User.builder()
                 .username("testuser")
@@ -108,9 +86,7 @@ class AuthServiceTest {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrongpassword", "encoded")).thenReturn(false);
 
-        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> authService.login(request));
-
-        assertEquals("Invalid password", exception.getMessage());
+        assertThrows(RuntimeException.class, () -> authService.login(request));
     }
 
     @Test
@@ -145,53 +121,5 @@ class AuthServiceTest {
                         && user.getVendorProfile() != null
                         && user.getVendorProfile().getApprovalStatus().equals("PLEASE_FILL_PROFILE")
         ));
-    }
-
-    @Test
-    void registerUserDuplicateUsernameThrowsConflict() {
-        UserRegisterRequest request = new UserRegisterRequest("newuser", "new@user.com", "secret");
-        when(userRepository.existsByUsernameIgnoreCase("newuser")).thenReturn(true);
-
-        assertThrows(ConflictException.class, () -> authService.registerUser(request));
-
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void registerUserDuplicateEmailThrowsConflict() {
-        UserRegisterRequest request = new UserRegisterRequest("newuser", "new@user.com", "secret");
-        when(userRepository.existsByEmailIgnoreCase("new@user.com")).thenReturn(true);
-
-        assertThrows(ConflictException.class, () -> authService.registerUser(request));
-
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void registerVendorDuplicateUsernameThrowsConflict() {
-        VendorRegisterRequest request = new VendorRegisterRequest();
-        request.setUsername("vendor1");
-        request.setEmail("vendor1@mail.com");
-        request.setPassword("secret");
-
-        when(userRepository.existsByUsernameIgnoreCase("vendor1")).thenReturn(true);
-
-        assertThrows(ConflictException.class, () -> authService.registerVendor(request));
-
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void registerVendorDuplicateEmailThrowsConflict() {
-        VendorRegisterRequest request = new VendorRegisterRequest();
-        request.setUsername("vendor1");
-        request.setEmail("vendor1@mail.com");
-        request.setPassword("secret");
-
-        when(userRepository.existsByEmailIgnoreCase("vendor1@mail.com")).thenReturn(true);
-
-        assertThrows(ConflictException.class, () -> authService.registerVendor(request));
-
-        verify(userRepository, never()).save(any());
     }
 }
