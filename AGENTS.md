@@ -97,6 +97,16 @@ This document defines implementation conventions for contributors and AI/code ag
 - `GlobalExceptionHandler` must return the runtime exception message for `RuntimeException` when message is present.
 - If runtime exception message is null/blank, fallback to: `An unexpected error occurred`.
 - Non-runtime generic exceptions (`Exception`) continue using the safe default message.
+- **Do not use plain `RuntimeException` for expected API/business errors.** Reserve it for truly unexpected server failures only.
+- Expected conditions must use mapped exception types:
+  - `ResourceNotFoundException` → HTTP `404`
+  - `UnauthorizedException` → HTTP `401`
+  - `ValidationException` → HTTP `400`
+  - `ConflictException` → HTTP `409`
+  - `AccessDeniedException` → HTTP `403`
+- Ownership/authorization mismatches (for example: resource does not belong to authenticated vendor) must return `403`, not `500`.
+- Login failures such as unknown user, rejected user, and invalid password must return `401` with the domain message preserved.
+- JWT filter failures for expired or malformed bearer tokens must return a clean HTTP `401` JSON response with message `Token expired` or `Invalid token`.
 
 ### Analytics and approval center
 - Dashboard analytics endpoints exist for `/vendor/dashboard/analytics` and `/admin/dashboard/analytics`.
@@ -268,6 +278,15 @@ Do not commit real secrets into repository files.
   - Runtime messages are returned as API error message when non-blank (example: `Invalid password`).
   - Null/blank runtime message falls back to `An unexpected error occurred`.
   - Unit tests added in `GlobalExceptionHandlerTest`.
+- Service-layer expected error mapping hardening:
+  - Expected domain/API failures were refactored away from plain `RuntimeException` and now use mapped exception types (`ResourceNotFoundException`, `UnauthorizedException`, `ValidationException`, `ConflictException`, `AccessDeniedException`).
+  - This prevents expected client/business errors from falling through as HTTP `500 Internal Server Error`.
+- Authentication hardening:
+  - `/auth/login` returns HTTP `401` for `User not found`, `User is rejected`, and `Invalid password`.
+  - Rejected-user login check compares against `ApprovalStatus.REJECTED.name()`.
+  - JWTs currently expire after **24 hours** in `JwtService`.
+  - `JwtFilter` now catches expired/malformed tokens and returns clean HTTP `401` JSON responses with `Token expired` or `Invalid token`.
+  - Unit tests added in `JwtFilterTest` for valid, expired, and invalid token flows.
 
 ### Intentionally not implemented in current phase
 - CS role introduction
