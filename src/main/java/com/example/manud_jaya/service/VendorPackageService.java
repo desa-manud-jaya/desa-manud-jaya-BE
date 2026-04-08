@@ -1,6 +1,9 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ConflictException;
+import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.exception.ValidationException;
+import org.springframework.security.access.AccessDeniedException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.dto.DeletionRequestStatus;
 import com.example.manud_jaya.model.entity.Business;
@@ -39,7 +42,7 @@ public class VendorPackageService {
     ) {
 
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         validateBusinessOwnership(vendor, businessId);
 
@@ -72,15 +75,15 @@ public class VendorPackageService {
                                  String username,
                                  UpdatePackageRequest request) {
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         validateBusinessOwnership(vendor, businessId);
 
         Package pkg = repository.findById(packageId)
-                .orElseThrow(() -> new RuntimeException("Package not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
 
         if (!pkg.getBusinessId().equals(businessId)) {
-            throw new RuntimeException("Package does not belong to business");
+            throw new AccessDeniedException("Package does not belong to business");
         }
 
         if (request.getName() != null) pkg.setName(request.getName());
@@ -107,19 +110,19 @@ public class VendorPackageService {
                                    String username,
                                    String reason) {
         if (reason == null || reason.isBlank()) {
-            throw new RuntimeException("Deletion request reason is required");
+            throw new ValidationException("Deletion request reason is required");
         }
 
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         validateBusinessOwnership(vendor, businessId);
 
         Package pkg = repository.findById(packageId)
-                .orElseThrow(() -> new RuntimeException("Package not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
 
         if (!pkg.getBusinessId().equals(businessId)) {
-            throw new RuntimeException("Package does not belong to business");
+            throw new AccessDeniedException("Package does not belong to business");
         }
 
         pkg.setDeletionRequestStatus(DeletionRequestStatus.PENDING);
@@ -138,7 +141,7 @@ public class VendorPackageService {
 
     public void approve(String id, String adminId, String note) {
         Package pkg = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Package not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
 
         pkg.setApprovalStatus(ApprovalStatus.APPROVED.toString());
         pkg.setRejectionReason(null);
@@ -157,11 +160,11 @@ public class VendorPackageService {
 
     public void reject(String id, String reason, String adminId) {
         if (reason == null || reason.trim().isEmpty()) {
-            throw new RuntimeException("Rejection reason is required");
+            throw new ValidationException("Rejection reason is required");
         }
 
         Package pkg = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Package not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
 
         pkg.setApprovalStatus(ApprovalStatus.REJECTED.toString());
         pkg.setRejectionReason(reason.trim());
@@ -175,10 +178,10 @@ public class VendorPackageService {
 
     public Package approveDeletionRequest(String packageId, String adminId, String note) {
         Package pkg = repository.findById(packageId)
-                .orElseThrow(() -> new RuntimeException("Package not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
 
         if (pkg.getDeletionRequestStatus() != DeletionRequestStatus.PENDING) {
-            throw new RuntimeException("No pending deletion request");
+            throw new ConflictException("No pending deletion request");
         }
 
         pkg.setDeletionRequestStatus(DeletionRequestStatus.APPROVED);
@@ -194,14 +197,14 @@ public class VendorPackageService {
 
     public Package rejectDeletionRequest(String packageId, String adminId, String reason) {
         if (reason == null || reason.isBlank()) {
-            throw new RuntimeException("Reason is required");
+            throw new ValidationException("Reason is required");
         }
 
         Package pkg = repository.findById(packageId)
-                .orElseThrow(() -> new RuntimeException("Package not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
 
         if (pkg.getDeletionRequestStatus() != DeletionRequestStatus.PENDING) {
-            throw new RuntimeException("No pending deletion request");
+            throw new ConflictException("No pending deletion request");
         }
 
         pkg.setDeletionRequestStatus(DeletionRequestStatus.REJECTED);
@@ -217,7 +220,7 @@ public class VendorPackageService {
 
     public List<Package> getByBusinessForVendor(String businessId, String username) {
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         validateBusinessOwnership(vendor, businessId);
 
@@ -232,7 +235,7 @@ public class VendorPackageService {
                                                          int page,
                                                          int size) {
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         validateBusinessOwnership(vendor, businessId);
 
@@ -316,20 +319,20 @@ public class VendorPackageService {
 
     public Package getApprovedDetail(String packageId) {
         return repository.findByIdAndApprovalStatus(packageId, ApprovalStatus.APPROVED.toString())
-                .orElseThrow(() -> new RuntimeException("Package not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
     }
 
     public Package getPackageDetail(String packageId) {
         return repository.findById(packageId)
-                .orElseThrow(() -> new RuntimeException("Package not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
     }
 
     private void validateBusinessOwnership(User vendor, String businessId) {
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
         if (!business.getVendorId().equals(vendor.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new AccessDeniedException("Unauthorized access");
         }
     }
 

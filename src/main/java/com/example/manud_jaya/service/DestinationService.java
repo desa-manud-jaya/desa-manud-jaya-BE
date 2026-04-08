@@ -1,5 +1,7 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ResourceNotFoundException;
+import com.example.manud_jaya.exception.ValidationException;
 import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.Destination;
 import com.example.manud_jaya.model.entity.User;
@@ -33,13 +35,13 @@ public class DestinationService {
     ) throws IOException {
 
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
         if (!business.getVendorId().equals(vendor.getId())) {
-            throw new RuntimeException("Unauthorized business access");
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized business access");
         }
 
         List<String> imageUrls = new ArrayList<>();
@@ -47,7 +49,7 @@ public class DestinationService {
         for (MultipartFile image : images) {
 
             if (!image.getContentType().startsWith("image/")) {
-                throw new RuntimeException("File must be image");
+                throw new ValidationException("File must be image");
             }
 
             String url = storageService.uploadImage(image);
@@ -73,13 +75,13 @@ public class DestinationService {
     public List<Destination> getBusinessDestinations(String businessId, String username) {
 
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
         if (!business.getVendorId().equals(vendor.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized access");
         }
 
         return destinationRepository.findByBusinessId(businessId);
@@ -88,13 +90,13 @@ public class DestinationService {
     public List<Destination> getApprovedDestinations(String businessId, String username) {
 
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
         if (!business.getVendorId().equals(vendor.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized access");
         }
 
         return destinationRepository
@@ -104,13 +106,13 @@ public class DestinationService {
     public List<Destination> getPendingDestinations(String businessId, String username) {
 
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
         if (!business.getVendorId().equals(vendor.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized access");
         }
 
         return destinationRepository

@@ -1,5 +1,6 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.model.entity.Destination;
 import com.example.manud_jaya.repository.DestinationRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class AdminDestinationService {
     public Destination approveDestination(String destinationId, String adminId) {
 
         Destination destination = destinationRepository.findById(destinationId)
-                .orElseThrow(() -> new RuntimeException("Destination not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Destination not found"));
 
         destination.setApprovalStatus("APPROVED");
 
@@ -43,7 +44,7 @@ public class AdminDestinationService {
     public Destination rejectDestination(String destinationId, String adminId) {
 
         Destination destination = destinationRepository.findById(destinationId)
-                .orElseThrow(() -> new RuntimeException("Destination not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Destination not found"));
 
         destination.setApprovalStatus("REJECTED");
 

@@ -1,5 +1,6 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.repository.BusinessRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,13 +26,13 @@ public class PublicBusinessService {
 
         return businessRepository
                 .findByIdAndApprovalStatus(businessId, "APPROVED")
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
     }
 
     public Business getBusinessByVendor(String vendorId) {
 
         return businessRepository
                 .findFirstByVendorId(vendorId)
-                .orElseThrow(() -> new RuntimeException("don't find business"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
     }
 }

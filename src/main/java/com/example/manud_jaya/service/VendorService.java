@@ -1,5 +1,7 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ConflictException;
+import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.model.dto.VendorProfile;
 import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.User;
@@ -28,10 +30,10 @@ public class VendorService {
     public Business createBusiness(CreateBusinessRequest request, String username) {
 
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         if (businessRepository.findFirstByVendorId(vendor.getId()).isPresent()) {
-            throw new RuntimeException("Vendor already has a business");
+            throw new ConflictException("Vendor already has a business");
         }
 
         Business business = Business.builder()
@@ -60,13 +62,13 @@ public class VendorService {
     public Business getBusinessDetail(String businessId, String username) {
 
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
         if (!business.getVendorId().equals(vendor.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized access");
         }
 
         return business;
