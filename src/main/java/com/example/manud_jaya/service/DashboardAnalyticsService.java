@@ -1,5 +1,6 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.model.entity.Booking;
 import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.Destination;
@@ -40,7 +41,7 @@ public class DashboardAnalyticsService {
 
     public PartnerDashboardAnalyticsResponse getPartnerAnalytics(String username) {
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         List<Business> businesses = businessRepository.findByVendorId(vendor.getId());
         if (businesses.isEmpty()) {
@@ -116,7 +117,7 @@ public class DashboardAnalyticsService {
 
     public ImpactAnalyticsResponse getVendorImpactAnalytics(String username) {
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         List<Business> businesses = businessRepository.findByVendorId(vendor.getId());
         if (businesses.isEmpty()) {

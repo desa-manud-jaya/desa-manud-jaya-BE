@@ -2,6 +2,7 @@ package com.example.manud_jaya.service;
 
 import com.example.manud_jaya.configuration.security.JwtService;
 import com.example.manud_jaya.exception.ConflictException;
+import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.exception.UnauthorizedException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.dto.VendorProfile;
@@ -30,7 +31,7 @@ public class AuthService {
     public User getUser(String username) {
 
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     public User putUserVendor(String username, UpdateBusinessProfile updateBusinessProfile) {

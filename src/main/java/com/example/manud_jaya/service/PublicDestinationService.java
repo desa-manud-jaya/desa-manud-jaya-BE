@@ -1,5 +1,6 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.exception.ValidationException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.entity.Business;
@@ -39,7 +40,7 @@ public class PublicDestinationService {
 
         Business business = businessRepository
                 .findByIdAndApprovalStatus(businessId, "APPROVED")
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
         return destinationRepository.findByBusinessIdAndApprovalStatus(business.getId(), "APPROVED");
     }
@@ -47,7 +48,7 @@ public class PublicDestinationService {
     public Destination getDestinationDetail(String destinationId) {
 
         return destinationRepository.findByIdAndApprovalStatus(destinationId, "APPROVED")
-                .orElseThrow(() -> new RuntimeException("Destination not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Destination not found"));
     }
 
     private void validatePagination(int page, int size) {

@@ -1,5 +1,6 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.dto.VendorProfile;
 import com.example.manud_jaya.model.entity.Business;
@@ -69,7 +70,7 @@ public class AdminService {
     public void approveVendor(String userId, String adminId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         VendorProfile profile = user.getVendorProfile();
 
@@ -105,7 +106,7 @@ public class AdminService {
     public void rejectVendor(String userId, String adminId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         VendorProfile profile = user.getVendorProfile();
 

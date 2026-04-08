@@ -1,5 +1,7 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ResourceNotFoundException;
+import com.example.manud_jaya.exception.ValidationException;
 import com.example.manud_jaya.model.dto.VerificationStatus;
 import com.example.manud_jaya.model.dto.VendorDocumentType;
 import com.example.manud_jaya.model.entity.Business;
@@ -41,13 +43,13 @@ public class VendorDocumentService {
         validateDocumentFile(file);
 
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
         if (!business.getVendorId().equals(vendor.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized access");
         }
 
         String fileUrl = supabaseStorageService.uploadDocument(file);
@@ -72,13 +74,13 @@ public class VendorDocumentService {
 
     public List<VendorDocument> getVendorDocuments(String businessId, String username) {
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
         if (!business.getVendorId().equals(vendor.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized access");
         }
 
         return vendorDocumentRepository.findByVendorIdAndBusinessId(vendor.getId(), businessId)
@@ -89,13 +91,13 @@ public class VendorDocumentService {
 
     public VendorDocumentProgressResponse getProgress(String businessId, String username) {
         User vendor = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Vendor not found"));
 
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Business not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
         if (!business.getVendorId().equals(vendor.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized access");
         }
 
         long total = vendorDocumentRepository.findByVendorIdAndBusinessId(vendor.getId(), businessId).size();
@@ -156,10 +158,10 @@ public class VendorDocumentService {
 
     public VendorDocument approve(String documentId, String adminUsername, String note) {
         User admin = userRepository.findByUsername(adminUsername)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
 
         VendorDocument doc = vendorDocumentRepository.findById(documentId)
-                .orElseThrow(() -> new RuntimeException("Document not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
 
         doc.setStatus(VerificationStatus.APPROVED);
         doc.setRejectionReason(null);
@@ -175,14 +177,14 @@ public class VendorDocumentService {
 
     public VendorDocument reject(String documentId, String adminUsername, String reason, String note) {
         if (reason == null || reason.isBlank()) {
-            throw new RuntimeException("Rejection reason is required");
+            throw new ValidationException("Rejection reason is required");
         }
 
         User admin = userRepository.findByUsername(adminUsername)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
 
         VendorDocument doc = vendorDocumentRepository.findById(documentId)
-                .orElseThrow(() -> new RuntimeException("Document not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
 
         doc.setStatus(VerificationStatus.REJECTED);
         doc.setRejectionReason(reason.trim());
@@ -198,16 +200,16 @@ public class VendorDocumentService {
 
     private void validateDocumentFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new RuntimeException("File is empty");
+            throw new ValidationException("File is empty");
         }
 
         if (file.getSize() > MAX_SIZE) {
-            throw new RuntimeException("File size exceeds 10 MB limit");
+            throw new ValidationException("File size exceeds 10 MB limit");
         }
 
         String contentType = file.getContentType();
         if (contentType == null) {
-            throw new RuntimeException("Invalid file type");
+            throw new ValidationException("Invalid file type");
         }
 
         boolean allowed = contentType.equals("application/pdf")
@@ -216,7 +218,7 @@ public class VendorDocumentService {
                 || contentType.equals("image/png");
 
         if (!allowed) {
-            throw new RuntimeException("Supported types: PDF/JPG/JPEG/PNG");
+            throw new ValidationException("Supported types: PDF/JPG/JPEG/PNG");
         }
     }
 }

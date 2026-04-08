@@ -1,5 +1,6 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -57,22 +58,22 @@ public class SupabaseStorageService {
 
     private void validateImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new RuntimeException("File is empty");
+            throw new ValidationException("File is empty");
         }
 
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
-            throw new RuntimeException("File must be an image");
+            throw new ValidationException("File must be an image");
         }
     }
 
     private void validateDocument(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new RuntimeException("File is empty");
+            throw new ValidationException("File is empty");
         }
 
         if (file.getSize() > 10 * 1024 * 1024) {
-            throw new RuntimeException("File size exceeds 10 MB");
+            throw new ValidationException("File size exceeds 10 MB");
         }
 
         String contentType = file.getContentType();
@@ -91,7 +92,7 @@ public class SupabaseStorageService {
                 || "application/vnd.openxmlformats-officedocument.wordprocessingml.document".equals(contentType);
 
         if (!isPdf && !isSupportedImage && !isWord) {
-            throw new RuntimeException("Invalid document type. Supported: PDF/DOC/DOCX/JPG/JPEG/PNG");
+            throw new ValidationException("Invalid document type. Supported: PDF/DOC/DOCX/JPG/JPEG/PNG");
         }
     }
 
