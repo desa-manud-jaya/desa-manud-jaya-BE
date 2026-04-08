@@ -2,6 +2,7 @@ package com.example.manud_jaya.service;
 
 import com.example.manud_jaya.configuration.security.JwtService;
 import com.example.manud_jaya.exception.ConflictException;
+import com.example.manud_jaya.exception.UnauthorizedException;
 import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.request.LoginRequest;
 import com.example.manud_jaya.model.inbound.request.UserRegisterRequest;
@@ -68,15 +69,35 @@ class AuthServiceTest {
     }
 
     @Test
-    void loginUserNotFoundThrows() {
+    void loginUserNotFoundThrowsUnauthorized() {
         LoginRequest request = new LoginRequest("unknown", "password");
         when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> authService.login(request));
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> authService.login(request));
+
+        assertEquals("User not found", exception.getMessage());
     }
 
     @Test
-    void loginInvalidPasswordThrows() {
+    void loginRejectedUserThrowsUnauthorized() {
+        LoginRequest request = new LoginRequest("testuser", "password123");
+        User user = User.builder()
+                .username("testuser")
+                .password("encoded")
+                .status("REJECTED")
+                .build();
+
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> authService.login(request));
+
+        assertEquals("User is rejected", exception.getMessage());
+        verify(passwordEncoder, never()).matches(any(), any());
+        verify(jwtService, never()).generateToken(any());
+    }
+
+    @Test
+    void loginInvalidPasswordThrowsUnauthorized() {
         LoginRequest request = new LoginRequest("testuser", "wrongpassword");
         User user = User.builder()
                 .username("testuser")
@@ -87,7 +108,9 @@ class AuthServiceTest {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrongpassword", "encoded")).thenReturn(false);
 
-        assertThrows(RuntimeException.class, () -> authService.login(request));
+        UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> authService.login(request));
+
+        assertEquals("Invalid password", exception.getMessage());
     }
 
     @Test
