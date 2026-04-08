@@ -10,7 +10,6 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
 
@@ -160,6 +159,23 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(
+            RuntimeException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(500)
+                .error("Internal Server Error")
+                .message(resolveMessage(ex))
+                .path(request.getRequestURI())
+                .build();
+
+        log.error("Runtime error occurred", ex);
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,
@@ -175,5 +191,13 @@ public class GlobalExceptionHandler {
 
         log.error("Unexpected error occurred", ex);
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private String resolveMessage(Throwable ex) {
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            return "An unexpected error occurred";
+        }
+        return message;
     }
 }
