@@ -1,5 +1,7 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ResourceNotFoundException;
+import com.example.manud_jaya.exception.ValidationException;
 import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.Destination;
 import com.example.manud_jaya.model.entity.User;
@@ -13,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -94,6 +97,25 @@ class DestinationServiceTest {
     }
 
     @Test
+    void createDestinationVendorNotFoundThrows() {
+        when(userRepository.findByUsername("vendor1")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                destinationService.createDestination("business-id", new CreateDestinationRequest(), List.of(), "vendor1")
+        );
+    }
+
+    @Test
+    void createDestinationBusinessNotFoundThrows() {
+        when(userRepository.findByUsername("vendor1")).thenReturn(Optional.of(vendor));
+        when(businessRepository.findById("business-id")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                destinationService.createDestination("business-id", new CreateDestinationRequest(), List.of(), "vendor1")
+        );
+    }
+
+    @Test
     void createDestinationUnauthorizedThrows() {
         User anotherVendor = User.builder().id("another").username("vendor2").build();
 
@@ -102,9 +124,45 @@ class DestinationServiceTest {
 
         CreateDestinationRequest request = new CreateDestinationRequest();
 
-        assertThrows(RuntimeException.class, () ->
+        assertThrows(AccessDeniedException.class, () ->
                 destinationService.createDestination("business-id", request, List.of(), "vendor2")
         );
+    }
+
+    @Test
+    void createDestinationNonImageThrowsValidation() {
+        CreateDestinationRequest request = new CreateDestinationRequest();
+        MockMultipartFile file = new MockMultipartFile("images", "doc.pdf", "application/pdf", "x".getBytes());
+
+        when(userRepository.findByUsername("vendor1")).thenReturn(Optional.of(vendor));
+        when(businessRepository.findById("business-id")).thenReturn(Optional.of(business));
+
+        assertThrows(ValidationException.class, () ->
+                destinationService.createDestination("business-id", request, List.of(file), "vendor1")
+        );
+    }
+
+    @Test
+    void getBusinessDestinationsSuccess() {
+        when(userRepository.findByUsername("vendor1")).thenReturn(Optional.of(vendor));
+        when(businessRepository.findById("business-id")).thenReturn(Optional.of(business));
+        when(destinationRepository.findByBusinessId("business-id"))
+                .thenReturn(List.of(Destination.builder().id("d1").build()));
+
+        List<Destination> result = destinationService.getBusinessDestinations("business-id", "vendor1");
+
+        assertEquals(1, result.size());
+        verify(destinationRepository).findByBusinessId("business-id");
+    }
+
+    @Test
+    void getBusinessDestinationsUnauthorizedThrows() {
+        User anotherVendor = User.builder().id("another").username("vendor2").build();
+        when(userRepository.findByUsername("vendor2")).thenReturn(Optional.of(anotherVendor));
+        when(businessRepository.findById("business-id")).thenReturn(Optional.of(business));
+
+        assertThrows(AccessDeniedException.class,
+                () -> destinationService.getBusinessDestinations("business-id", "vendor2"));
     }
 
     @Test
