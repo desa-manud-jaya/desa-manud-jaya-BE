@@ -9,10 +9,13 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateBookingRequest {
+public class GuideRegisterRequest {
 
-    private String businessId;
-    private String packageId;
-    private String tripDate;
-    private Integer quantity;
+    private String username;
+    private String email;
+    private String password;
+
+    private String fullName;
+    private String phone;
+    private String licenseNumber;
 }

@@ -69,6 +69,20 @@ public class AdminPackages {
         return ResponseEntity.ok(service.getPackageDetail(id));
     }
 
+    @PutMapping("/{id}/assign-guide")
+    @Operation(summary = "Assign guide to package", description = "Assign an approved guide to selected package.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Guide assigned"),
+            @ApiResponse(responseCode = "400", description = "Guide is not approved or invalid request"),
+            @ApiResponse(responseCode = "404", description = "Package or guide not found")
+    })
+    public ResponseEntity<?> assignGuide(
+            @PathVariable String id,
+            @RequestParam String guideId
+    ) {
+        return ResponseEntity.ok(service.assignGuideToPackage(id, guideId));
+    }
+
     @GetMapping("/deletion-requests")
     @Operation(summary = "Get package deletion requests queue")
     public ResponseEntity<?> deletionRequests(

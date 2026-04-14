@@ -229,6 +229,30 @@ class VendorPackageServiceTest {
     }
 
     @Test
+    void assignGuideToPackageShouldSucceedForApprovedGuide() {
+        Package pkg = Package.builder().id("p1").build();
+        User guide = User.builder().id("g1").role("GUIDE").status("APPROVED").build();
+
+        when(packageRepository.findById("p1")).thenReturn(Optional.of(pkg));
+        when(userRepository.findByIdAndRole("g1", "GUIDE")).thenReturn(Optional.of(guide));
+        when(packageRepository.save(any(Package.class))).thenAnswer(i -> i.getArgument(0));
+
+        Package saved = vendorPackageService.assignGuideToPackage("p1", "g1");
+        assertEquals("g1", saved.getGuideId());
+    }
+
+    @Test
+    void assignGuideToPackageShouldRejectNonApprovedGuide() {
+        Package pkg = Package.builder().id("p1").build();
+        User guide = User.builder().id("g1").role("GUIDE").status("PENDING").build();
+
+        when(packageRepository.findById("p1")).thenReturn(Optional.of(pkg));
+        when(userRepository.findByIdAndRole("g1", "GUIDE")).thenReturn(Optional.of(guide));
+
+        assertThrows(RuntimeException.class, () -> vendorPackageService.assignGuideToPackage("p1", "g1"));
+    }
+
+    @Test
     void paginationValidationShouldThrow() {
         assertThrows(RuntimeException.class, () -> vendorPackageService.getAllApprovedPackages(-1, 10));
         assertThrows(RuntimeException.class, () -> vendorPackageService.getAllApprovedPackages(0, 0));

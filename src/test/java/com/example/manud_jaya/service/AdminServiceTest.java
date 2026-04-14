@@ -1,9 +1,13 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ResourceNotFoundException;
+import com.example.manud_jaya.exception.ValidationException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
+import com.example.manud_jaya.model.dto.GuideProfile;
 import com.example.manud_jaya.model.dto.VendorProfile;
 import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.User;
+import com.example.manud_jaya.model.inbound.response.GuidePendingResponse;
 import com.example.manud_jaya.model.inbound.response.VendorPendingResponse;
 import com.example.manud_jaya.repository.BusinessRepository;
 import com.example.manud_jaya.repository.UserRepository;
@@ -12,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +34,9 @@ class AdminServiceTest {
     @Mock
     private BusinessRepository businessRepository;
 
+    @Mock
+    private ModerationAuditService moderationAuditService;
+
     @InjectMocks
     private AdminService adminService;
 
@@ -37,6 +45,7 @@ class AdminServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        ReflectionTestUtils.setField(adminService, "moderationAuditService", moderationAuditService);
 
         VendorProfile pendingProfile = VendorProfile.builder()
                 .vendorName("Pending Vendor")
@@ -70,6 +79,32 @@ class AdminServiceTest {
     }
 
     @Test
+    void getApprovedVendorsSuccess() {
+        User approvedVendor = User.builder()
+                .id("vendor-2")
+                .username("vendor2")
+                .email("vendor2@test.com")
+                .role("VENDOR")
+                .status("ACTIVE")
+                .vendorProfile(VendorProfile.builder()
+                        .vendorName("Approved Vendor")
+                        .phone("081")
+                        .address("Addr")
+                        .ktpNumber("111")
+                        .approvalStatus("APPROVED")
+                        .build())
+                .build();
+
+        when(userRepository.findByRoleAndVendorProfileApprovalStatus("VENDOR", ApprovalStatus.APPROVED))
+                .thenReturn(List.of(approvedVendor));
+
+        List<VendorPendingResponse> result = adminService.getApproveVendors();
+
+        assertEquals(1, result.size());
+        assertEquals("Approved Vendor", result.get(0).getVendorName());
+    }
+
+    @Test
     void approveVendorSuccessCreatesBusinessWhenMissing() {
         when(userRepository.findById("vendor-1")).thenReturn(Optional.of(pendingVendor));
         when(businessRepository.findFirstByVendorId("vendor-1")).thenReturn(Optional.empty());
@@ -91,6 +126,7 @@ class AdminServiceTest {
                         && business.getApprovalStatus().equals("APPROVED")
         ));
         verify(userRepository, times(1)).save(pendingVendor);
+        verify(moderationAuditService).log("VENDOR", "APPROVE", "admin-1", "vendor-1", "Vendor approved");
     }
 
     @Test
@@ -115,12 +151,110 @@ class AdminServiceTest {
         assertEquals("REJECTED", pendingVendor.getVendorProfile().getApprovalStatus());
         assertEquals("INACTIVE", pendingVendor.getStatus());
         verify(userRepository, times(1)).save(pendingVendor);
+        verify(moderationAuditService).log("VENDOR", "REJECT", "admin-1", "vendor-1", "Vendor rejected");
     }
 
     @Test
     void approveVendorNotFoundThrows() {
         when(userRepository.findById("missing")).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> adminService.approveVendor("missing", "admin-1"));
+        assertThrows(ResourceNotFoundException.class, () -> adminService.approveVendor("missing", "admin-1"));
+    }
+
+    @Test
+    void rejectVendorNotFoundThrows() {
+        when(userRepository.findById("missing")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> adminService.rejectVendor("missing", "admin-1"));
+    }
+
+    @Test
+    void getPendingGuidesAndApprovedGuidesSuccess() {
+        User pendingGuide = User.builder()
+                .id("guide-1")
+                .username("guide1")
+                .email("guide1@mail.com")
+                .role("GUIDE")
+                .status("PENDING")
+                .guideProfile(GuideProfile.builder().fullName("Guide One").phone("080").licenseNumber("L-1").build())
+                .build();
+        User approvedGuide = User.builder()
+                .id("guide-2")
+                .username("guide2")
+                .email("guide2@mail.com")
+                .role("GUIDE")
+                .status("APPROVED")
+                .guideProfile(GuideProfile.builder().fullName("Guide Two").phone("081").licenseNumber("L-2").build())
+                .build();
+
+        when(userRepository.findByRoleAndStatus("GUIDE", "PENDING")).thenReturn(List.of(pendingGuide));
+        when(userRepository.findByRoleAndStatus("GUIDE", "APPROVED")).thenReturn(List.of(approvedGuide));
+
+        List<GuidePendingResponse> pending = adminService.getPendingGuides();
+        List<GuidePendingResponse> approved = adminService.getApprovedGuides();
+
+        assertEquals(1, pending.size());
+        assertEquals("Guide One", pending.get(0).getFullName());
+        assertEquals(1, approved.size());
+        assertEquals("Guide Two", approved.get(0).getFullName());
+    }
+
+    @Test
+    void approveGuideSuccess() {
+        User pendingGuide = User.builder()
+                .id("guide-1")
+                .role("GUIDE")
+                .status("PENDING")
+                .guideProfile(GuideProfile.builder().approvalStatus("PENDING").build())
+                .build();
+
+        when(userRepository.findByIdAndRole("guide-1", "GUIDE")).thenReturn(Optional.of(pendingGuide));
+
+        adminService.approveGuide("guide-1", "admin-1");
+
+        assertEquals("APPROVED", pendingGuide.getStatus());
+        assertEquals("APPROVED", pendingGuide.getGuideProfile().getApprovalStatus());
+        assertNotNull(pendingGuide.getGuideProfile().getApprovedAt());
+        verify(userRepository).save(pendingGuide);
+        verify(moderationAuditService).log("GUIDE", "APPROVE", "admin-1", "guide-1", "Guide approved");
+    }
+
+    @Test
+    void rejectGuideSuccess() {
+        User pendingGuide = User.builder()
+                .id("guide-1")
+                .role("GUIDE")
+                .status("PENDING")
+                .guideProfile(GuideProfile.builder().approvalStatus("PENDING").build())
+                .build();
+
+        when(userRepository.findByIdAndRole("guide-1", "GUIDE")).thenReturn(Optional.of(pendingGuide));
+
+        adminService.rejectGuide("guide-1", "admin-1", "Not complete");
+
+        assertEquals("REJECTED", pendingGuide.getStatus());
+        assertEquals("REJECTED", pendingGuide.getGuideProfile().getApprovalStatus());
+        assertEquals("Not complete", pendingGuide.getGuideProfile().getRejectionReason());
+        verify(userRepository).save(pendingGuide);
+        verify(moderationAuditService).log("GUIDE", "REJECT", "admin-1", "guide-1", "Not complete");
+    }
+
+    @Test
+    void rejectGuideReasonMissingThrowsValidation() {
+        assertThrows(ValidationException.class, () -> adminService.rejectGuide("guide-1", "admin-1", " "));
+    }
+
+    @Test
+    void approveGuideNotFoundThrows() {
+        when(userRepository.findByIdAndRole("guide-1", "GUIDE")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> adminService.approveGuide("guide-1", "admin-1"));
+    }
+
+    @Test
+    void rejectGuideNotFoundThrows() {
+        when(userRepository.findByIdAndRole("guide-1", "GUIDE")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> adminService.rejectGuide("guide-1", "admin-1", "Reason"));
     }
 }

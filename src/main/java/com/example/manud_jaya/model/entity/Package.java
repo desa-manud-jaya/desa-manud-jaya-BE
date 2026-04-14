@@ -44,6 +44,9 @@ public class Package {
     private String vendorId;
     private String businessId;
 
+    private String guideId;
+    private String guideName;
+
     private String rejectionReason;
     private String moderationNote;
 

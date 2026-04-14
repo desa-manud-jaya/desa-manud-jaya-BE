@@ -1,5 +1,6 @@
 package com.example.manud_jaya.controller;
 
+import com.example.manud_jaya.model.inbound.request.GuideRegisterRequest;
 import com.example.manud_jaya.model.inbound.request.LoginRequest;
 import com.example.manud_jaya.model.inbound.request.UserRegisterRequest;
 import com.example.manud_jaya.model.inbound.request.VendorRegisterRequest;
@@ -71,5 +72,15 @@ public class AuthController {
         authService.registerVendor(request);
 
         return ResponseEntity.ok("Vendor registered, waiting admin approval");
+    }
+
+    @PostMapping("/register/guide")
+    @Operation(summary = "Register guide", description = "Register a GUIDE account in PENDING state for admin verification.")
+    @ApiResponse(responseCode = "200", description = "Guide registered")
+    public ResponseEntity<?> registerGuide(@RequestBody GuideRegisterRequest request) {
+
+        authService.registerGuide(request);
+
+        return ResponseEntity.ok("Guide registered, waiting admin approval");
     }
 }

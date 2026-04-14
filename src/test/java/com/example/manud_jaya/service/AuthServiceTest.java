@@ -4,6 +4,7 @@ import com.example.manud_jaya.configuration.security.JwtService;
 import com.example.manud_jaya.exception.ConflictException;
 import com.example.manud_jaya.exception.UnauthorizedException;
 import com.example.manud_jaya.model.entity.User;
+import com.example.manud_jaya.model.inbound.request.GuideRegisterRequest;
 import com.example.manud_jaya.model.inbound.request.LoginRequest;
 import com.example.manud_jaya.model.inbound.request.UserRegisterRequest;
 import com.example.manud_jaya.model.inbound.request.VendorRegisterRequest;
@@ -191,6 +192,44 @@ class AuthServiceTest {
         when(userRepository.existsByEmailIgnoreCase("vendor1@mail.com")).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> authService.registerVendor(request));
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerGuideStartsWithPendingStatus() {
+        GuideRegisterRequest request = GuideRegisterRequest.builder()
+                .username("guide1")
+                .email("guide1@mail.com")
+                .password("secret")
+                .fullName("Guide One")
+                .phone("08123")
+                .licenseNumber("LIC-1")
+                .build();
+
+        when(passwordEncoder.encode("secret")).thenReturn("encoded-secret");
+
+        authService.registerGuide(request);
+
+        verify(userRepository).save(argThat(user ->
+                user.getRole().equals("GUIDE")
+                        && user.getStatus().equals("PENDING")
+                        && user.getGuideProfile() != null
+                        && user.getGuideProfile().getApprovalStatus().equals("PENDING")
+        ));
+    }
+
+    @Test
+    void registerGuideDuplicateUsernameThrowsConflict() {
+        GuideRegisterRequest request = GuideRegisterRequest.builder()
+                .username("guide1")
+                .email("guide1@mail.com")
+                .password("secret")
+                .build();
+
+        when(userRepository.existsByUsernameIgnoreCase("guide1")).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> authService.registerGuide(request));
 
         verify(userRepository, never()).save(any());
     }
