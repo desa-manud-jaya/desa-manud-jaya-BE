@@ -1,10 +1,13 @@
 package com.example.manud_jaya.service;
 
 import com.example.manud_jaya.exception.ResourceNotFoundException;
+import com.example.manud_jaya.exception.ValidationException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
+import com.example.manud_jaya.model.dto.GuideProfile;
 import com.example.manud_jaya.model.dto.VendorProfile;
 import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.User;
+import com.example.manud_jaya.model.inbound.response.GuidePendingResponse;
 import com.example.manud_jaya.model.inbound.response.VendorPendingResponse;
 import com.example.manud_jaya.repository.BusinessRepository;
 import com.example.manud_jaya.repository.UserRepository;
@@ -121,6 +124,84 @@ public class AdminService {
         if (moderationAuditService != null) {
             moderationAuditService.log("VENDOR", "REJECT", adminId, user.getId(), "Vendor rejected");
         }
+    }
+
+    public List<GuidePendingResponse> getPendingGuides() {
+        return userRepository.findByRoleAndStatus("GUIDE", ApprovalStatus.PENDING.name())
+                .stream()
+                .map(this::toGuideResponse)
+                .toList();
+    }
+
+    public List<GuidePendingResponse> getApprovedGuides() {
+        return userRepository.findByRoleAndStatus("GUIDE", ApprovalStatus.APPROVED.name())
+                .stream()
+                .map(this::toGuideResponse)
+                .toList();
+    }
+
+    public void approveGuide(String userId, String adminId) {
+        User guide = userRepository.findByIdAndRole(userId, "GUIDE")
+                .orElseThrow(() -> new ResourceNotFoundException("Guide not found"));
+
+        GuideProfile guideProfile = guide.getGuideProfile();
+        if (guideProfile == null) {
+            guideProfile = GuideProfile.builder().build();
+            guide.setGuideProfile(guideProfile);
+        }
+
+        guideProfile.setApprovalStatus(ApprovalStatus.APPROVED.name());
+        guideProfile.setApprovedAt(LocalDateTime.now());
+        guideProfile.setRejectionReason(null);
+
+        guide.setStatus(ApprovalStatus.APPROVED.name());
+        guide.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(guide);
+
+        if (moderationAuditService != null) {
+            moderationAuditService.log("GUIDE", "APPROVE", adminId, guide.getId(), "Guide approved");
+        }
+    }
+
+    public void rejectGuide(String userId, String adminId, String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new ValidationException("Rejection reason is required");
+        }
+
+        User guide = userRepository.findByIdAndRole(userId, "GUIDE")
+                .orElseThrow(() -> new ResourceNotFoundException("Guide not found"));
+
+        GuideProfile guideProfile = guide.getGuideProfile();
+        if (guideProfile == null) {
+            guideProfile = GuideProfile.builder().build();
+            guide.setGuideProfile(guideProfile);
+        }
+
+        guideProfile.setApprovalStatus(ApprovalStatus.REJECTED.name());
+        guideProfile.setApprovedAt(LocalDateTime.now());
+        guideProfile.setRejectionReason(reason);
+
+        guide.setStatus(ApprovalStatus.REJECTED.name());
+        guide.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(guide);
+
+        if (moderationAuditService != null) {
+            moderationAuditService.log("GUIDE", "REJECT", adminId, guide.getId(), reason);
+        }
+    }
+
+    private GuidePendingResponse toGuideResponse(User user) {
+        GuideProfile profile = user.getGuideProfile();
+
+        return GuidePendingResponse.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(profile != null ? profile.getFullName() : null)
+                .phone(profile != null ? profile.getPhone() : null)
+                .licenseNumber(profile != null ? profile.getLicenseNumber() : null)
+                .status(user.getStatus())
+                .build();
     }
 
 }

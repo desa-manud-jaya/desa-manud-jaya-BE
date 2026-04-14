@@ -76,6 +76,6 @@ public class PublicPackageController {
     public ResponseEntity<?> getApprovedPackageDetail(
             @Parameter(description = "Package ID") @PathVariable String packageId
     ) {
-        return ResponseEntity.ok(vendorPackageService.getApprovedDetail(packageId));
+        return ResponseEntity.ok(vendorPackageService.getApprovedDetailWithGuide(packageId));
     }
 }

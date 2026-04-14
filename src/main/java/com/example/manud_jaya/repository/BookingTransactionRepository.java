@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,6 +18,10 @@ public interface BookingTransactionRepository extends MongoRepository<BookingTra
     Page<BookingTransaction> findByStatus(String status, Pageable pageable);
 
     Page<BookingTransaction> findByBusinessIdInAndStatus(List<String> businessIds, String status, Pageable pageable);
+
+    Page<BookingTransaction> findByGuideId(String guideId, Pageable pageable);
+
+    boolean existsByGuideIdAndTripDateAndStatusIn(String guideId, LocalDate tripDate, List<String> statuses);
 
     List<BookingTransaction> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 }

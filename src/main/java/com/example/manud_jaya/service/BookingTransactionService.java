@@ -1,5 +1,6 @@
 package com.example.manud_jaya.service;
 
+import com.example.manud_jaya.exception.ConflictException;
 import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.exception.UnauthorizedException;
 import com.example.manud_jaya.exception.ValidationException;
@@ -58,6 +59,22 @@ public class BookingTransactionService {
             throw new ValidationException("Package does not belong to the selected business");
         }
 
+        if (pkg.getGuideId() == null || pkg.getGuideId().isBlank()) {
+            throw new ValidationException("Selected package does not have assigned guide");
+        }
+
+        LocalDate tripDate = parseTripDate(request.getTripDate());
+
+        boolean occupied = bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(
+                pkg.getGuideId(),
+                tripDate,
+                List.of(STATUS_WAITING_FOR_PAYMENT, STATUS_PENDING, STATUS_APPROVED)
+        );
+
+        if (occupied) {
+            throw new ConflictException("Guide is already assigned on the selected tripDate");
+        }
+
         double price = pkg.getPrice() == null ? 0.0 : pkg.getPrice().doubleValue();
         double totalAmount = price * request.getQuantity();
 
@@ -65,6 +82,8 @@ public class BookingTransactionService {
                 .userId(user.getId())
                 .businessId(business.getId())
                 .packageId(pkg.getId())
+                .guideId(pkg.getGuideId())
+                .tripDate(tripDate)
                 .quantity(request.getQuantity())
                 .amount(totalAmount)
                 .status(STATUS_WAITING_FOR_PAYMENT)
@@ -130,6 +149,26 @@ public class BookingTransactionService {
         var data = (status == null || status.isBlank())
                 ? bookingTransactionRepository.findAll(pageable)
                 : bookingTransactionRepository.findByStatus(status.trim().toLowerCase(), pageable);
+
+        return PagedResponse.<BookingTransaction>builder()
+                .items(data.getContent())
+                .page(page)
+                .size(size)
+                .total(data.getTotalElements())
+                .build();
+    }
+
+    public PagedResponse<BookingTransaction> getGuideBookings(String username, int page, int size) {
+        validatePagination(page, size);
+
+        User guide = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Guide not found"));
+
+        if (!"GUIDE".equalsIgnoreCase(guide.getRole())) {
+            throw new UnauthorizedException("Only guide account can access guide bookings");
+        }
+
+        var data = bookingTransactionRepository.findByGuideId(guide.getId(), PageRequest.of(page, size));
 
         return PagedResponse.<BookingTransaction>builder()
                 .items(data.getContent())
@@ -267,8 +306,20 @@ public class BookingTransactionService {
             throw new ValidationException("packageId is required");
         }
 
+        if (request.getTripDate() == null || request.getTripDate().isBlank()) {
+            throw new ValidationException("tripDate is required");
+        }
+
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new ValidationException("quantity must be greater than 0");
+        }
+    }
+
+    private LocalDate parseTripDate(String tripDate) {
+        try {
+            return LocalDate.parse(tripDate);
+        } catch (DateTimeParseException ex) {
+            throw new ValidationException("Invalid tripDate format. Expected yyyy-MM-dd", ex);
         }
     }
 

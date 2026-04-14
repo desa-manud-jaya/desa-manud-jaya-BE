@@ -32,5 +32,9 @@ public interface UserRepository extends MongoRepository<User, String> {
             String approvalStatus
     );
 
+    List<User> findByRoleAndStatus(String role, String status);
+
+    Optional<User> findByIdAndRole(String id, String role);
+
     long countByRoleAndStatus(String role, String status);
 }

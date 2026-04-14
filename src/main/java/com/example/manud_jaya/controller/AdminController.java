@@ -1,6 +1,7 @@
 package com.example.manud_jaya.controller;
 
 
+import com.example.manud_jaya.model.inbound.response.GuidePendingResponse;
 import com.example.manud_jaya.model.inbound.response.VendorPendingResponse;
 import com.example.manud_jaya.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,5 +69,44 @@ public class AdminController {
         adminService.rejectVendor(userId, adminUsername);
 
         return ResponseEntity.ok("Vendor Rejected");
+    }
+
+    @GetMapping("/guides/pending")
+    @Operation(summary = "Get pending guides")
+    @ApiResponse(responseCode = "200", description = "Pending guides retrieved")
+    public ResponseEntity<List<GuidePendingResponse>> getPendingGuides() {
+        return ResponseEntity.ok(adminService.getPendingGuides());
+    }
+
+    @GetMapping("/guides/approved")
+    @Operation(summary = "Get approved guides")
+    @ApiResponse(responseCode = "200", description = "Approved guides retrieved")
+    public ResponseEntity<List<GuidePendingResponse>> getApprovedGuides() {
+        return ResponseEntity.ok(adminService.getApprovedGuides());
+    }
+
+    @PostMapping("/guides/{userId}/approve")
+    @Operation(summary = "Approve guide")
+    @ApiResponse(responseCode = "200", description = "Guide approved")
+    public ResponseEntity<?> approveGuide(
+            @Parameter(description = "Guide user ID") @PathVariable String userId,
+            Authentication authentication
+    ) {
+        String adminUsername = authentication.getName();
+        adminService.approveGuide(userId, adminUsername);
+        return ResponseEntity.ok("Guide approved");
+    }
+
+    @PostMapping("/guides/{userId}/reject")
+    @Operation(summary = "Reject guide")
+    @ApiResponse(responseCode = "200", description = "Guide rejected")
+    public ResponseEntity<?> rejectGuide(
+            @Parameter(description = "Guide user ID") @PathVariable String userId,
+            @RequestParam String reason,
+            Authentication authentication
+    ) {
+        String adminUsername = authentication.getName();
+        adminService.rejectGuide(userId, adminUsername, reason);
+        return ResponseEntity.ok("Guide rejected");
     }
 }

@@ -1,5 +1,6 @@
 package com.example.manud_jaya.controller;
 
+import com.example.manud_jaya.model.inbound.request.GuideRegisterRequest;
 import com.example.manud_jaya.model.inbound.request.LoginRequest;
 import com.example.manud_jaya.model.inbound.request.UserRegisterRequest;
 import com.example.manud_jaya.model.inbound.request.VendorRegisterRequest;
@@ -65,6 +66,21 @@ class AuthControllerTest {
         ResponseEntity<?> response = authController.registerVendor(request);
 
         verify(authService, times(1)).registerVendor(request);
+        assertEquals(200, response.getStatusCode().value());
+    }
+
+    @Test
+    void registerGuideCallsService() {
+        GuideRegisterRequest request = GuideRegisterRequest.builder()
+                .username("guide1")
+                .email("guide1@mail.com")
+                .password("secret")
+                .fullName("Guide One")
+                .build();
+
+        ResponseEntity<?> response = authController.registerGuide(request);
+
+        verify(authService, times(1)).registerGuide(request);
         assertEquals(200, response.getStatusCode().value());
     }
 }

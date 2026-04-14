@@ -1,5 +1,6 @@
 package com.example.manud_jaya.model.entity;
 
+import com.example.manud_jaya.model.dto.GuideProfile;
 import com.example.manud_jaya.model.dto.VendorProfile;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,9 +23,10 @@ public class User {
     private String username;
     private String email;
     private String password;
-    private String role; // ADMIN, USER, VENDOR
-    private String status; // ACTIVE, PENDING
+    private String role; // ADMIN, USER, VENDOR, GUIDE
+    private String status; // ACTIVE, PENDING, REJECTED, PLEASE_FILL_PROFILE
     private VendorProfile vendorProfile;
+    private GuideProfile guideProfile;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

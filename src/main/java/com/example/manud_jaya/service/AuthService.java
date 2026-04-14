@@ -5,8 +5,10 @@ import com.example.manud_jaya.exception.ConflictException;
 import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.exception.UnauthorizedException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
+import com.example.manud_jaya.model.dto.GuideProfile;
 import com.example.manud_jaya.model.dto.VendorProfile;
 import com.example.manud_jaya.model.entity.User;
+import com.example.manud_jaya.model.inbound.request.GuideRegisterRequest;
 import com.example.manud_jaya.model.inbound.request.LoginRequest;
 import com.example.manud_jaya.model.inbound.request.UpdateBusinessProfile;
 import com.example.manud_jaya.model.inbound.request.UserRegisterRequest;
@@ -125,6 +127,33 @@ public class AuthService {
         user.setStatus("PLEASE_FILL_PROFILE");
         user.setCreatedAt(LocalDateTime.now());
         user.setVendorProfile(vendorProfile);
+        userRepository.save(user);
+    }
+
+    // REGISTER GUIDE
+    public void registerGuide(GuideRegisterRequest request) {
+
+        String normalizedUsername = normalizeUsername(request.getUsername());
+        String normalizedEmail = normalizeEmail(request.getEmail());
+
+        validateUniqueRegistrationIdentity(normalizedUsername, normalizedEmail);
+
+        GuideProfile guideProfile = GuideProfile.builder()
+                .fullName(request.getFullName())
+                .phone(request.getPhone())
+                .licenseNumber(request.getLicenseNumber())
+                .approvalStatus(ApprovalStatus.PENDING.name())
+                .build();
+
+        User user = new User();
+        user.setUsername(normalizedUsername);
+        user.setEmail(normalizedEmail);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole("GUIDE");
+        user.setStatus(ApprovalStatus.PENDING.name());
+        user.setGuideProfile(guideProfile);
+        user.setCreatedAt(LocalDateTime.now());
+
         userRepository.save(user);
     }
 
