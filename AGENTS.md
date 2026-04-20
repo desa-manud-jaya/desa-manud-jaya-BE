@@ -131,7 +131,14 @@ This document defines implementation conventions for contributors and AI/code ag
 - Admin payment moderation endpoints:
   - `GET /admin/bookings/payment` (list, optional status filter)
   - `GET /admin/bookings/payment/{bookingId}` (detail)
-  - `PATCH /admin/bookings/payment/{bookingId}/decision` (approve/reject)
+  - `PATCH /admin/bookings/payment/{bookingId}/decision` (approve/reject, supports optional `guideId` on approve)
+- Admin booking guide assignment endpoint:
+  - `PUT /admin/bookings/{bookingId}/assign-guide?guideId=...` (assign approved guide to pending/approved booking)
+- Approved guide listing endpoint:
+  - `GET /admin/guides/approved` supports optional `tripDate` (`yyyy-MM-dd`) to return only guides available on that date.
+- Guide daily capacity rule:
+  - One guide can only handle **one** booking per `tripDate` for active statuses (`waiting_for_payment`, `pending`, `approved`).
+  - `rejected` transactions are excluded from occupancy checks.
 - Vendor bookings endpoint `/vendor/bookings` must only expose `approved` booking transactions.
 - Admin revenue endpoint is `/admin/revenue/summary` with optional `startDate` + `endDate` filter in `yyyy-MM-dd` format.
 
@@ -258,7 +265,9 @@ Do not commit real secrets into repository files.
   - `POST /user/bookings/{bookingId}/payment-proof` to upload proof and move status to `pending`
   - `GET /user/bookings/{userId}` for self booking history
   - `GET /admin/bookings/payment` + `GET /admin/bookings/payment/{bookingId}` for admin visibility
-  - `PATCH /admin/bookings/payment/{bookingId}/decision` for approve/reject flow
+  - `PATCH /admin/bookings/payment/{bookingId}/decision` for approve/reject flow (optional `guideId` can assign guide on approve)
+  - `PUT /admin/bookings/{bookingId}/assign-guide` for manual guide assignment to booking transaction
+  - Guide one-tour-per-day occupancy check across statuses `waiting_for_payment`, `pending`, and `approved` (excluding `rejected`)
   - `GET /vendor/bookings` returns only `approved` booking transactions
   - `GET /admin/revenue/summary` for total revenue
   - Date-range filtering via `startDate` + `endDate` with format validation (`yyyy-MM-dd`)

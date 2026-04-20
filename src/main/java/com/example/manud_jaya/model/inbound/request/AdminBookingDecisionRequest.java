@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class AdminBookingDecisionRequest {
     private String decision;
     private String note;
+    private String guideId;
 }

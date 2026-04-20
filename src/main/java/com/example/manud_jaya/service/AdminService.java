@@ -9,21 +9,27 @@ import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.response.GuidePendingResponse;
 import com.example.manud_jaya.model.inbound.response.VendorPendingResponse;
+import com.example.manud_jaya.repository.BookingTransactionRepository;
 import com.example.manud_jaya.repository.BusinessRepository;
 import com.example.manud_jaya.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AdminService {
 
+    private static final List<String> GUIDE_OCCUPIED_STATUSES = List.of("waiting_for_payment", "pending", "approved");
+
     private final UserRepository userRepository;
     private final BusinessRepository businessRepository;
+    private final BookingTransactionRepository bookingTransactionRepository;
 
     @Autowired(required = false)
     private ModerationAuditService moderationAuditService;
@@ -134,8 +140,22 @@ public class AdminService {
     }
 
     public List<GuidePendingResponse> getApprovedGuides() {
-        return userRepository.findByRoleAndStatus("GUIDE", ApprovalStatus.APPROVED.name())
-                .stream()
+        return getApprovedGuides(null);
+    }
+
+    public List<GuidePendingResponse> getApprovedGuides(String tripDate) {
+        List<User> approvedGuides = userRepository.findByRoleAndStatus("GUIDE", ApprovalStatus.APPROVED.name());
+
+        if (tripDate == null || tripDate.isBlank()) {
+            return approvedGuides.stream()
+                    .map(this::toGuideResponse)
+                    .toList();
+        }
+
+        LocalDate parsedTripDate = parseTripDate(tripDate);
+
+        return approvedGuides.stream()
+                .filter(guide -> isGuideAvailable(guide.getId(), parsedTripDate))
                 .map(this::toGuideResponse)
                 .toList();
     }
@@ -187,6 +207,22 @@ public class AdminService {
 
         if (moderationAuditService != null) {
             moderationAuditService.log("GUIDE", "REJECT", adminId, guide.getId(), reason);
+        }
+    }
+
+    private boolean isGuideAvailable(String guideId, LocalDate tripDate) {
+        return !bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(
+                guideId,
+                tripDate,
+                GUIDE_OCCUPIED_STATUSES
+        );
+    }
+
+    private LocalDate parseTripDate(String tripDate) {
+        try {
+            return LocalDate.parse(tripDate);
+        } catch (DateTimeParseException ex) {
+            throw new ValidationException("Invalid tripDate format. Expected yyyy-MM-dd", ex);
         }
     }
 
