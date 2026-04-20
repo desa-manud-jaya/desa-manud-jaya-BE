@@ -263,7 +263,7 @@ Do not commit real secrets into repository files.
   - `GET /admin/revenue/summary` for total revenue
   - Date-range filtering via `startDate` + `endDate` with format validation (`yyyy-MM-dd`)
   - Unit tests for booking transaction and vendor operations services
-  - Booking guide-assignment validation toggle via `booking.require-assigned-guide` / `BOOKING_REQUIRE_ASSIGNED_GUIDE` (default `true`)
+  - Booking guide-assignment validation toggle via `booking.require-assigned-guide` / `BOOKING_REQUIRE_ASSIGNED_GUIDE` (current default `false`, set `true` to enforce guide requirement)
 - Public approved listing endpoints:
   - `GET /destinations/approved`
   - `GET /packages/approved`

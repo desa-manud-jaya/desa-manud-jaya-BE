@@ -24,7 +24,7 @@ app:
     server-url: https://desa-manud-jaya-backend-dev.up.railway.app
 
 booking:
-  require-assigned-guide: ${BOOKING_REQUIRE_ASSIGNED_GUIDE:true}
+  require-assigned-guide: ${BOOKING_REQUIRE_ASSIGNED_GUIDE:false}
 
 logging:
   level:

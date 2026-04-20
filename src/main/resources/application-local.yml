@@ -20,7 +20,7 @@ jwt:
   secret-key: my-super-secret-jwt-key-for-travel-app-12345
 
 booking:
-  require-assigned-guide: ${BOOKING_REQUIRE_ASSIGNED_GUIDE:true}
+  require-assigned-guide: ${BOOKING_REQUIRE_ASSIGNED_GUIDE:false}
 
 logging:
   level:
