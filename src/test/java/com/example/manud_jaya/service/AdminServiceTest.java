@@ -176,7 +176,7 @@ class AdminServiceTest {
                 .email("guide1@mail.com")
                 .role("GUIDE")
                 .status("PENDING")
-                .guideProfile(GuideProfile.builder().fullName("Guide One").phone("080").licenseNumber("L-1").build())
+                .guideProfile(GuideProfile.builder().fullName("Guide One").phone("080").licenseNumber("L-1").cvDocumentUrl("https://example/cv-1.pdf").build())
                 .build();
         User approvedGuide = User.builder()
                 .id("guide-2")
@@ -184,7 +184,7 @@ class AdminServiceTest {
                 .email("guide2@mail.com")
                 .role("GUIDE")
                 .status("APPROVED")
-                .guideProfile(GuideProfile.builder().fullName("Guide Two").phone("081").licenseNumber("L-2").build())
+                .guideProfile(GuideProfile.builder().fullName("Guide Two").phone("081").licenseNumber("L-2").cvDocumentUrl("https://example/cv-2.pdf").build())
                 .build();
 
         when(userRepository.findByRoleAndStatus("GUIDE", "PENDING")).thenReturn(List.of(pendingGuide));
@@ -195,8 +195,10 @@ class AdminServiceTest {
 
         assertEquals(1, pending.size());
         assertEquals("Guide One", pending.get(0).getFullName());
+        assertEquals("https://example/cv-1.pdf", pending.get(0).getCvDocumentUrl());
         assertEquals(1, approved.size());
         assertEquals("Guide Two", approved.get(0).getFullName());
+        assertEquals("https://example/cv-2.pdf", approved.get(0).getCvDocumentUrl());
     }
 
     @Test

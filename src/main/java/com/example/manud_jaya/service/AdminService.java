@@ -200,6 +200,7 @@ public class AdminService {
                 .fullName(profile != null ? profile.getFullName() : null)
                 .phone(profile != null ? profile.getPhone() : null)
                 .licenseNumber(profile != null ? profile.getLicenseNumber() : null)
+                .cvDocumentUrl(profile != null ? profile.getCvDocumentUrl() : null)
                 .status(user.getStatus())
                 .build();
     }

@@ -274,6 +274,7 @@ Do not commit real secrets into repository files.
 - Guide registration CV upload:
   - `/auth/register/guide` supports multipart form-data with parts `data` (JSON) + `cv` (PDF/DOC/DOCX).
   - Uploaded CV URL is persisted on `GuideProfile.cvDocumentUrl`.
+  - Admin guide queues (`/admin/guides/pending` and `/admin/guides/approved`) include `cvDocumentUrl` so admin can review CV before approval.
 - Document upload format expansion:
   - `SupabaseStorageService#uploadDocument` accepts DOC (`application/msword`) and DOCX (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`) in addition to existing formats.
   - Validation message updated to: `Invalid document type. Supported: PDF/DOC/DOCX/JPG/JPEG/PNG`.
