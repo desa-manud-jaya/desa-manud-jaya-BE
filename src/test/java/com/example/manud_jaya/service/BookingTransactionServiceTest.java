@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,7 +33,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -62,17 +66,31 @@ class BookingTransactionServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        setRequireAssignedGuide(true);
+        when(bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(anyString(), any(), anyList()))
+                .thenReturn(false);
+    }
+
+    private void setRequireAssignedGuide(boolean value) {
+        try {
+            Field field = BookingTransactionService.class.getDeclaredField("requireAssignedGuide");
+            field.setAccessible(true);
+            field.set(bookingTransactionService, value);
+        } catch (ReflectiveOperationException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Test
     void createBookingShouldSetWaitingForPaymentStatus() {
         User user = User.builder().id("user-1").username("user1").build();
         Business business = Business.builder().id("biz-1").build();
-        Package pkg = Package.builder().id("pkg-1").businessId("biz-1").price(BigDecimal.valueOf(100000)).build();
+        Package pkg = Package.builder().id("pkg-1").businessId("biz-1").guideId("guide-1").price(BigDecimal.valueOf(100000)).build();
 
         CreateBookingRequest request = CreateBookingRequest.builder()
                 .businessId("biz-1")
                 .packageId("pkg-1")
+                .tripDate("2026-05-01")
                 .quantity(2)
                 .build();
 
@@ -132,7 +150,7 @@ class BookingTransactionServiceTest {
 
     @Test
     void createBookingUserNotFoundShouldThrowNotFound() {
-        CreateBookingRequest request = CreateBookingRequest.builder().businessId("biz").packageId("pkg").quantity(1).build();
+        CreateBookingRequest request = CreateBookingRequest.builder().businessId("biz").packageId("pkg").tripDate("2026-05-01").quantity(1).build();
         when(userRepository.findByUsername("user1")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> bookingTransactionService.createBooking("user1", request));
@@ -140,7 +158,7 @@ class BookingTransactionServiceTest {
 
     @Test
     void createBookingBusinessNotFoundShouldThrowNotFound() {
-        CreateBookingRequest request = CreateBookingRequest.builder().businessId("biz").packageId("pkg").quantity(1).build();
+        CreateBookingRequest request = CreateBookingRequest.builder().businessId("biz").packageId("pkg").tripDate("2026-05-01").quantity(1).build();
         when(userRepository.findByUsername("user1")).thenReturn(Optional.of(User.builder().id("u").build()));
         when(businessRepository.findById("biz")).thenReturn(Optional.empty());
 
@@ -149,7 +167,7 @@ class BookingTransactionServiceTest {
 
     @Test
     void createBookingPackageNotFoundShouldThrowNotFound() {
-        CreateBookingRequest request = CreateBookingRequest.builder().businessId("biz").packageId("pkg").quantity(1).build();
+        CreateBookingRequest request = CreateBookingRequest.builder().businessId("biz").packageId("pkg").tripDate("2026-05-01").quantity(1).build();
         when(userRepository.findByUsername("user1")).thenReturn(Optional.of(User.builder().id("u").build()));
         when(businessRepository.findById("biz")).thenReturn(Optional.of(Business.builder().id("biz").build()));
         when(packageRepository.findById("pkg")).thenReturn(Optional.empty());
@@ -159,7 +177,7 @@ class BookingTransactionServiceTest {
 
     @Test
     void createBookingPackageBusinessMismatchShouldThrowValidation() {
-        CreateBookingRequest request = CreateBookingRequest.builder().businessId("biz").packageId("pkg").quantity(1).build();
+        CreateBookingRequest request = CreateBookingRequest.builder().businessId("biz").packageId("pkg").tripDate("2026-05-01").quantity(1).build();
         when(userRepository.findByUsername("user1")).thenReturn(Optional.of(User.builder().id("u").build()));
         when(businessRepository.findById("biz")).thenReturn(Optional.of(Business.builder().id("biz").build()));
         when(packageRepository.findById("pkg")).thenReturn(Optional.of(Package.builder().id("pkg").businessId("other").price(BigDecimal.ONE).build()));
@@ -169,14 +187,91 @@ class BookingTransactionServiceTest {
 
     @Test
     void createBookingNullPriceShouldUseZeroAmount() {
-        CreateBookingRequest request = CreateBookingRequest.builder().businessId("biz").packageId("pkg").quantity(3).build();
+        CreateBookingRequest request = CreateBookingRequest.builder().businessId("biz").packageId("pkg").tripDate("2026-05-01").quantity(3).build();
         when(userRepository.findByUsername("user1")).thenReturn(Optional.of(User.builder().id("u").build()));
         when(businessRepository.findById("biz")).thenReturn(Optional.of(Business.builder().id("biz").build()));
-        when(packageRepository.findById("pkg")).thenReturn(Optional.of(Package.builder().id("pkg").businessId("biz").price(null).build()));
+        when(packageRepository.findById("pkg")).thenReturn(Optional.of(Package.builder().id("pkg").businessId("biz").guideId("guide-1").price(null).build()));
         when(bookingTransactionRepository.save(any(BookingTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         BookingTransaction result = bookingTransactionService.createBooking("user1", request);
         assertEquals(0.0, result.getAmount());
+    }
+
+    @Test
+    void createBookingGuideOccupiedShouldThrowConflict() {
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .businessId("biz")
+                .packageId("pkg")
+                .tripDate("2026-05-01")
+                .quantity(1)
+                .build();
+
+        when(userRepository.findByUsername("user1")).thenReturn(Optional.of(User.builder().id("u1").build()));
+        when(businessRepository.findById("biz")).thenReturn(Optional.of(Business.builder().id("biz").build()));
+        when(packageRepository.findById("pkg")).thenReturn(Optional.of(Package.builder().id("pkg").businessId("biz").guideId("guide-1").price(BigDecimal.ONE).build()));
+        when(bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(anyString(), any(), anyList()))
+                .thenReturn(true);
+
+        assertThrows(com.example.manud_jaya.exception.ConflictException.class,
+                () -> bookingTransactionService.createBooking("user1", request));
+    }
+
+    @Test
+    void createBookingWithoutAssignedGuideShouldThrowWhenToggleEnabled() {
+        setRequireAssignedGuide(true);
+
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .businessId("biz")
+                .packageId("pkg")
+                .tripDate("2026-05-01")
+                .quantity(1)
+                .build();
+
+        when(userRepository.findByUsername("user1")).thenReturn(Optional.of(User.builder().id("u1").build()));
+        when(businessRepository.findById("biz")).thenReturn(Optional.of(Business.builder().id("biz").build()));
+        when(packageRepository.findById("pkg")).thenReturn(Optional.of(Package.builder().id("pkg").businessId("biz").price(BigDecimal.ONE).build()));
+
+        assertThrows(ValidationException.class,
+                () -> bookingTransactionService.createBooking("user1", request));
+        verify(bookingTransactionRepository, never())
+                .existsByGuideIdAndTripDateAndStatusIn(anyString(), any(), anyList());
+    }
+
+    @Test
+    void createBookingWithoutAssignedGuideShouldPassWhenToggleDisabled() {
+        setRequireAssignedGuide(false);
+
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .businessId("biz")
+                .packageId("pkg")
+                .tripDate("2026-05-01")
+                .quantity(2)
+                .build();
+
+        when(userRepository.findByUsername("user1")).thenReturn(Optional.of(User.builder().id("u1").build()));
+        when(businessRepository.findById("biz")).thenReturn(Optional.of(Business.builder().id("biz").build()));
+        when(packageRepository.findById("pkg")).thenReturn(Optional.of(Package.builder().id("pkg").businessId("biz").price(BigDecimal.valueOf(150000)).build()));
+        when(bookingTransactionRepository.save(any(BookingTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingTransaction result = bookingTransactionService.createBooking("user1", request);
+
+        assertNotNull(result);
+        assertEquals("waiting_for_payment", result.getStatus());
+        assertEquals(300000.0, result.getAmount());
+        assertNull(result.getGuideId());
+        verify(bookingTransactionRepository, never())
+                .existsByGuideIdAndTripDateAndStatusIn(anyString(), any(), anyList());
+    }
+
+    @Test
+    void getGuideBookingsShouldReturnData() {
+        User guide = User.builder().id("g1").username("guide1").role("GUIDE").build();
+        when(userRepository.findByUsername("guide1")).thenReturn(Optional.of(guide));
+        when(bookingTransactionRepository.findByGuideId("g1", PageRequest.of(0, 10)))
+                .thenReturn(new PageImpl<>(List.of(BookingTransaction.builder().id("trx-1").guideId("g1").build()), PageRequest.of(0, 10), 1));
+
+        PagedResponse<BookingTransaction> response = bookingTransactionService.getGuideBookings("guide1", 0, 10);
+        assertEquals(1, response.getTotal());
     }
 
     @Test

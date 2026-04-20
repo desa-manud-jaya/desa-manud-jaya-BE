@@ -6,11 +6,14 @@ import com.example.manud_jaya.exception.ValidationException;
 import org.springframework.security.access.AccessDeniedException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.dto.DeletionRequestStatus;
+import com.example.manud_jaya.model.dto.GuideProfile;
 import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.Package;
 import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.request.CreatePackageRequest;
 import com.example.manud_jaya.model.inbound.request.UpdatePackageRequest;
+import com.example.manud_jaya.model.inbound.response.GuideSummaryResponse;
+import com.example.manud_jaya.model.inbound.response.PackageDetailResponse;
 import com.example.manud_jaya.model.inbound.response.PagedResponse;
 import com.example.manud_jaya.repository.BusinessRepository;
 import com.example.manud_jaya.repository.PackageRepository;
@@ -322,9 +325,67 @@ public class VendorPackageService {
                 .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
     }
 
+    public PackageDetailResponse getApprovedDetailWithGuide(String packageId) {
+        Package pkg = getApprovedDetail(packageId);
+        return toPackageDetailResponse(pkg);
+    }
+
     public Package getPackageDetail(String packageId) {
         return repository.findById(packageId)
                 .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
+    }
+
+    public Package assignGuideToPackage(String packageId, String guideId) {
+        if (guideId == null || guideId.isBlank()) {
+            throw new ValidationException("guideId is required");
+        }
+
+        Package pkg = repository.findById(packageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Package not found"));
+
+        User guide = userRepository.findByIdAndRole(guideId, "GUIDE")
+                .orElseThrow(() -> new ResourceNotFoundException("Guide not found"));
+
+        if (!ApprovalStatus.APPROVED.name().equals(guide.getStatus())) {
+            throw new ValidationException("Only approved guide can be assigned");
+        }
+
+        GuideProfile profile = guide.getGuideProfile();
+
+        pkg.setGuideId(guide.getId());
+        pkg.setGuideName(profile != null && profile.getFullName() != null
+                ? profile.getFullName()
+                : guide.getUsername());
+        pkg.setUpdatedAt(LocalDateTime.now());
+
+        return repository.save(pkg);
+    }
+
+    private PackageDetailResponse toPackageDetailResponse(Package pkg) {
+        if (pkg.getGuideId() == null || pkg.getGuideId().isBlank()) {
+            return PackageDetailResponse.builder()
+                    .packageData(pkg)
+                    .guide(null)
+                    .build();
+        }
+
+        User guide = userRepository.findByIdAndRole(pkg.getGuideId(), "GUIDE").orElse(null);
+
+        GuideSummaryResponse guideSummary = null;
+        if (guide != null) {
+            GuideProfile profile = guide.getGuideProfile();
+            guideSummary = GuideSummaryResponse.builder()
+                    .id(guide.getId())
+                    .fullName(profile != null && profile.getFullName() != null ? profile.getFullName() : pkg.getGuideName())
+                    .phone(profile != null ? profile.getPhone() : null)
+                    .status(guide.getStatus())
+                    .build();
+        }
+
+        return PackageDetailResponse.builder()
+                .packageData(pkg)
+                .guide(guideSummary)
+                .build();
     }
 
     private void validateBusinessOwnership(User vendor, String businessId) {
