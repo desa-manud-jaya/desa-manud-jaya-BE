@@ -50,6 +50,7 @@ public class GuideBookingController {
                 .fullName(profile != null ? profile.getFullName() : null)
                 .phone(profile != null ? profile.getPhone() : null)
                 .licenseNumber(profile != null ? profile.getLicenseNumber() : null)
+                .cvDocumentUrl(profile != null ? profile.getCvDocumentUrl() : null)
                 .approvalStatus(profile != null ? profile.getApprovalStatus() : null)
                 .approvedAt(profile != null ? profile.getApprovedAt() : null)
                 .rejectionReason(profile != null ? profile.getRejectionReason() : null)

@@ -3,6 +3,7 @@ package com.example.manud_jaya.service;
 import com.example.manud_jaya.configuration.security.JwtService;
 import com.example.manud_jaya.exception.ConflictException;
 import com.example.manud_jaya.exception.UnauthorizedException;
+import com.example.manud_jaya.exception.ValidationException;
 import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.request.GuideRegisterRequest;
 import com.example.manud_jaya.model.inbound.request.LoginRequest;
@@ -15,8 +16,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -34,6 +38,9 @@ class AuthServiceTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private SupabaseStorageService supabaseStorageService;
 
     @InjectMocks
     private AuthService authService;
@@ -197,7 +204,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerGuideStartsWithPendingStatus() {
+    void registerGuideStartsWithPendingStatus() throws Exception {
         GuideRegisterRequest request = GuideRegisterRequest.builder()
                 .username("guide1")
                 .email("guide1@mail.com")
@@ -206,31 +213,51 @@ class AuthServiceTest {
                 .phone("08123")
                 .licenseNumber("LIC-1")
                 .build();
+        MultipartFile cvFile = new MockMultipartFile("cv", "guide-cv.pdf", "application/pdf", "cv".getBytes());
 
         when(passwordEncoder.encode("secret")).thenReturn("encoded-secret");
+        when(supabaseStorageService.uploadGuideCv(cvFile)).thenReturn("https://example/guide-cv.pdf");
 
-        authService.registerGuide(request);
+        authService.registerGuide(request, cvFile);
 
         verify(userRepository).save(argThat(user ->
                 user.getRole().equals("GUIDE")
                         && user.getStatus().equals("PENDING")
                         && user.getGuideProfile() != null
                         && user.getGuideProfile().getApprovalStatus().equals("PENDING")
+                        && "https://example/guide-cv.pdf".equals(user.getGuideProfile().getCvDocumentUrl())
         ));
     }
 
     @Test
-    void registerGuideDuplicateUsernameThrowsConflict() {
+    void registerGuideDuplicateUsernameThrowsConflict() throws Exception {
         GuideRegisterRequest request = GuideRegisterRequest.builder()
                 .username("guide1")
                 .email("guide1@mail.com")
                 .password("secret")
                 .build();
+        MultipartFile cvFile = new MockMultipartFile("cv", "guide-cv.pdf", "application/pdf", "cv".getBytes());
 
         when(userRepository.existsByUsernameIgnoreCase("guide1")).thenReturn(true);
 
-        assertThrows(ConflictException.class, () -> authService.registerGuide(request));
+        assertThrows(ConflictException.class, () -> authService.registerGuide(request, cvFile));
 
+        verify(userRepository, never()).save(any());
+        verify(supabaseStorageService, never()).uploadGuideCv(any());
+    }
+
+    @Test
+    void registerGuideCvUploadFailureShouldThrowValidation() throws Exception {
+        GuideRegisterRequest request = GuideRegisterRequest.builder()
+                .username("guide1")
+                .email("guide1@mail.com")
+                .password("secret")
+                .build();
+        MultipartFile cvFile = new MockMultipartFile("cv", "guide-cv.pdf", "application/pdf", "cv".getBytes());
+
+        when(supabaseStorageService.uploadGuideCv(cvFile)).thenThrow(new IOException("storage down"));
+
+        assertThrows(ValidationException.class, () -> authService.registerGuide(request, cvFile));
         verify(userRepository, never()).save(any());
     }
 }

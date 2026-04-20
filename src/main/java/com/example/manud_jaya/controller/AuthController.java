@@ -11,10 +11,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/auth")
@@ -74,12 +76,16 @@ public class AuthController {
         return ResponseEntity.ok("Vendor registered, waiting admin approval");
     }
 
-    @PostMapping("/register/guide")
-    @Operation(summary = "Register guide", description = "Register a GUIDE account in PENDING state for admin verification.")
+    @PostMapping(value = "/register/guide", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Register guide", description = "Register a GUIDE account in PENDING state for admin verification with CV upload. Multipart parts: data (application/json) and cv (PDF/DOC/DOCX).")
     @ApiResponse(responseCode = "200", description = "Guide registered")
-    public ResponseEntity<?> registerGuide(@RequestBody GuideRegisterRequest request) {
+    @ApiResponse(responseCode = "400", description = "Invalid payload or invalid CV format")
+    public ResponseEntity<?> registerGuide(
+            @RequestPart("data") GuideRegisterRequest request,
+            @RequestPart("cv") MultipartFile cv
+    ) {
 
-        authService.registerGuide(request);
+        authService.registerGuide(request, cv);
 
         return ResponseEntity.ok("Guide registered, waiting admin approval");
     }

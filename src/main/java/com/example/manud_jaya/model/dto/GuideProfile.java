@@ -16,6 +16,7 @@ public class GuideProfile {
     private String fullName;
     private String phone;
     private String licenseNumber;
+    private String cvDocumentUrl;
 
     private String approvalStatus;
     private LocalDateTime approvedAt;

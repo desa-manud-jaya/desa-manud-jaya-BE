@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockMultipartFile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -77,10 +78,11 @@ class AuthControllerTest {
                 .password("secret")
                 .fullName("Guide One")
                 .build();
+        MockMultipartFile cv = new MockMultipartFile("cv", "guide-cv.pdf", "application/pdf", "dummy-cv".getBytes());
 
-        ResponseEntity<?> response = authController.registerGuide(request);
+        ResponseEntity<?> response = authController.registerGuide(request, cv);
 
-        verify(authService, times(1)).registerGuide(request);
+        verify(authService, times(1)).registerGuide(request, cv);
         assertEquals(200, response.getStatusCode().value());
     }
 }
