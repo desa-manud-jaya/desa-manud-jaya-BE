@@ -23,6 +23,9 @@ app:
   openapi:
     server-url: https://desa-manud-jaya-backend.up.railway.app
 
+booking:
+  require-assigned-guide: ${BOOKING_REQUIRE_ASSIGNED_GUIDE:true}
+
 logging:
   level:
     root: WARN

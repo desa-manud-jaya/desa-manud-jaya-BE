@@ -245,6 +245,7 @@ Do not commit real secrets into repository files.
   - Vendor dashboard analytics + impact analytics
   - Admin dashboard analytics
   - Vendor/Admin bookings and reviews listing APIs
+  - Guide personal profile endpoint `GET /guide/profile` (returns guide identity + approval metadata for authenticated guide)
 - Unified admin approval center endpoint:
   - partner requests
   - package requests
@@ -262,6 +263,7 @@ Do not commit real secrets into repository files.
   - `GET /admin/revenue/summary` for total revenue
   - Date-range filtering via `startDate` + `endDate` with format validation (`yyyy-MM-dd`)
   - Unit tests for booking transaction and vendor operations services
+  - Booking guide-assignment validation toggle via `booking.require-assigned-guide` / `BOOKING_REQUIRE_ASSIGNED_GUIDE` (default `true`)
 - Public approved listing endpoints:
   - `GET /destinations/approved`
   - `GET /packages/approved`

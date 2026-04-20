@@ -16,6 +16,7 @@ import com.example.manud_jaya.repository.BusinessRepository;
 import com.example.manud_jaya.repository.PackageRepository;
 import com.example.manud_jaya.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,6 +44,9 @@ public class BookingTransactionService {
     private final PackageRepository packageRepository;
     private final SupabaseStorageService supabaseStorageService;
 
+    @Value("${booking.require-assigned-guide:true}")
+    private boolean requireAssignedGuide = true;
+
     public BookingTransaction createBooking(String username, CreateBookingRequest request) {
         validateCreateRequest(request);
 
@@ -59,20 +63,24 @@ public class BookingTransactionService {
             throw new ValidationException("Package does not belong to the selected business");
         }
 
-        if (pkg.getGuideId() == null || pkg.getGuideId().isBlank()) {
+        boolean hasAssignedGuide = pkg.getGuideId() != null && !pkg.getGuideId().isBlank();
+
+        if (requireAssignedGuide && !hasAssignedGuide) {
             throw new ValidationException("Selected package does not have assigned guide");
         }
 
         LocalDate tripDate = parseTripDate(request.getTripDate());
 
-        boolean occupied = bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(
-                pkg.getGuideId(),
-                tripDate,
-                List.of(STATUS_WAITING_FOR_PAYMENT, STATUS_PENDING, STATUS_APPROVED)
-        );
+        if (hasAssignedGuide) {
+            boolean occupied = bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(
+                    pkg.getGuideId(),
+                    tripDate,
+                    List.of(STATUS_WAITING_FOR_PAYMENT, STATUS_PENDING, STATUS_APPROVED)
+            );
 
-        if (occupied) {
-            throw new ConflictException("Guide is already assigned on the selected tripDate");
+            if (occupied) {
+                throw new ConflictException("Guide is already assigned on the selected tripDate");
+            }
         }
 
         double price = pkg.getPrice() == null ? 0.0 : pkg.getPrice().doubleValue();
