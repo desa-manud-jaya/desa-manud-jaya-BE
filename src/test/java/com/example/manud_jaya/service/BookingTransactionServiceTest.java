@@ -425,14 +425,74 @@ class BookingTransactionServiceTest {
     }
 
     @Test
+    void assignGuideToBookingShouldAssignGuideWhenBookingPending() {
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(User.builder().id("admin-1").build()));
+        when(bookingTransactionRepository.findById("trx-1")).thenReturn(Optional.of(
+                BookingTransaction.builder()
+                        .id("trx-1")
+                        .packageId("pkg-1")
+                        .tripDate(java.time.LocalDate.parse("2026-05-01"))
+                        .status("pending")
+                        .build()
+        ));
+        when(packageRepository.findByIdAndApprovalStatus("pkg-1", "APPROVED"))
+                .thenReturn(Optional.of(Package.builder().id("pkg-1").approvalStatus("APPROVED").build()));
+        when(userRepository.findByIdAndRole("guide-1", "GUIDE"))
+                .thenReturn(Optional.of(User.builder().id("guide-1").role("GUIDE").status("APPROVED").build()));
+        when(bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(anyString(), any(), anyList()))
+                .thenReturn(false);
+        when(bookingTransactionRepository.save(any(BookingTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingTransaction result = bookingTransactionService.assignGuideToBooking("admin", "trx-1", "guide-1");
+
+        assertEquals("guide-1", result.getGuideId());
+    }
+
+    @Test
+    void assignGuideToBookingShouldRejectNonAssignableStatus() {
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(User.builder().id("admin-1").build()));
+        when(bookingTransactionRepository.findById("trx-1")).thenReturn(Optional.of(
+                BookingTransaction.builder().id("trx-1").status("waiting_for_payment").build()
+        ));
+
+        assertThrows(ValidationException.class,
+                () -> bookingTransactionService.assignGuideToBooking("admin", "trx-1", "guide-1"));
+    }
+
+    @Test
     void reviewBookingPaymentShouldApprove() {
         when(userRepository.findByUsername("admin")).thenReturn(Optional.of(User.builder().id("admin-1").build()));
         when(bookingTransactionRepository.findById("trx-1"))
                 .thenReturn(Optional.of(BookingTransaction.builder().id("trx-1").status("pending").build()));
         when(bookingTransactionRepository.save(any(BookingTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BookingTransaction result = bookingTransactionService.reviewBookingPayment("admin", "trx-1", "APPROVE", "ok");
+        BookingTransaction result = bookingTransactionService.reviewBookingPayment("admin", "trx-1", "APPROVE", "ok", null);
         assertEquals("approved", result.getStatus());
+    }
+
+    @Test
+    void reviewBookingPaymentShouldAssignGuideWhenGuideIdProvided() {
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(User.builder().id("admin-1").build()));
+        when(bookingTransactionRepository.findById("trx-1")).thenReturn(Optional.of(
+                BookingTransaction.builder()
+                        .id("trx-1")
+                        .packageId("pkg-1")
+                        .tripDate(java.time.LocalDate.parse("2026-05-01"))
+                        .status("pending")
+                        .build()
+        ));
+        when(packageRepository.findByIdAndApprovalStatus("pkg-1", "APPROVED"))
+                .thenReturn(Optional.of(Package.builder().id("pkg-1").approvalStatus("APPROVED").build()));
+        when(userRepository.findByIdAndRole("guide-1", "GUIDE"))
+                .thenReturn(Optional.of(User.builder().id("guide-1").role("GUIDE").status("APPROVED").build()));
+        when(bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(anyString(), any(), anyList()))
+                .thenReturn(false);
+        when(bookingTransactionRepository.save(any(BookingTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingTransaction result = bookingTransactionService.reviewBookingPayment("admin", "trx-1", "APPROVE", "ok", "guide-1");
+
+        assertEquals("approved", result.getStatus());
+        assertEquals("guide-1", result.getGuideId());
     }
 
     @Test
@@ -442,7 +502,7 @@ class BookingTransactionServiceTest {
                 .thenReturn(Optional.of(BookingTransaction.builder().id("trx-1").status("pending").build()));
         when(bookingTransactionRepository.save(any(BookingTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BookingTransaction result = bookingTransactionService.reviewBookingPayment("admin", "trx-1", "REJECT", "invalid proof");
+        BookingTransaction result = bookingTransactionService.reviewBookingPayment("admin", "trx-1", "REJECT", "invalid proof", null);
         assertEquals("rejected", result.getStatus());
         assertEquals("invalid proof", result.getReviewNote());
     }
@@ -451,7 +511,7 @@ class BookingTransactionServiceTest {
     void reviewBookingPaymentAdminNotFoundShouldThrow() {
         when(userRepository.findByUsername("admin")).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class,
-                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "APPROVE", "ok"));
+                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "APPROVE", "ok", null));
     }
 
     @Test
@@ -460,7 +520,7 @@ class BookingTransactionServiceTest {
         when(bookingTransactionRepository.findById("trx-1")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
-                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "APPROVE", "ok"));
+                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "APPROVE", "ok", null));
     }
 
     @Test
@@ -470,7 +530,7 @@ class BookingTransactionServiceTest {
                 .thenReturn(Optional.of(BookingTransaction.builder().id("trx-1").status("approved").build()));
 
         assertThrows(ValidationException.class,
-                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "APPROVE", "ok"));
+                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "APPROVE", "ok", null));
     }
 
     @Test
@@ -480,7 +540,7 @@ class BookingTransactionServiceTest {
                 .thenReturn(Optional.of(BookingTransaction.builder().id("trx-1").status("pending").build()));
 
         assertThrows(ValidationException.class,
-                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "", "ok"));
+                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "", "ok", null));
     }
 
     @Test
@@ -490,7 +550,7 @@ class BookingTransactionServiceTest {
                 .thenReturn(Optional.of(BookingTransaction.builder().id("trx-1").status("pending").build()));
 
         assertThrows(ValidationException.class,
-                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", null, "ok"));
+                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", null, "ok", null));
     }
 
     @Test
@@ -500,7 +560,7 @@ class BookingTransactionServiceTest {
                 .thenReturn(Optional.of(BookingTransaction.builder().id("trx-1").status("pending").build()));
 
         assertThrows(ValidationException.class,
-                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "REJECT", null));
+                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "REJECT", null, null));
     }
 
     @Test
@@ -510,7 +570,7 @@ class BookingTransactionServiceTest {
                 .thenReturn(Optional.of(BookingTransaction.builder().id("trx-1").status("pending").build()));
 
         assertThrows(ValidationException.class,
-                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "REJECT", "   "));
+                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "REJECT", "   ", null));
     }
 
     @Test
@@ -520,7 +580,7 @@ class BookingTransactionServiceTest {
                 .thenReturn(Optional.of(BookingTransaction.builder().id("trx-1").status("pending").build()));
 
         assertThrows(ValidationException.class,
-                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "HOLD", "ok"));
+                () -> bookingTransactionService.reviewBookingPayment("admin", "trx-1", "HOLD", "ok", null));
     }
 
     @Test

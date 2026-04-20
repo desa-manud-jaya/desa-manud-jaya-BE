@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -63,7 +64,7 @@ public class AdminOperationsController {
     }
 
     @PatchMapping("/bookings/payment/{bookingId}/decision")
-    @Operation(summary = "Review booking payment", description = "Approve or reject a pending booking payment.")
+    @Operation(summary = "Review booking payment", description = "Approve or reject a pending booking payment. Optional guideId can be provided on approve.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Booking payment reviewed successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid decision or booking status"),
@@ -79,7 +80,29 @@ public class AdminOperationsController {
                         authentication.getName(),
                         bookingId,
                         request.getDecision(),
-                        request.getNote()
+                        request.getNote(),
+                        request.getGuideId()
+                )
+        );
+    }
+
+    @PutMapping("/bookings/{bookingId}/assign-guide")
+    @Operation(summary = "Assign guide to booking", description = "Assign an approved guide to a pending/approved booking transaction.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Guide assigned to booking successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid booking status or guide schedule conflict"),
+            @ApiResponse(responseCode = "404", description = "Booking, guide, or admin not found")
+    })
+    public ResponseEntity<?> assignGuideToBooking(
+            Authentication authentication,
+            @PathVariable String bookingId,
+            @RequestParam String guideId
+    ) {
+        return ResponseEntity.ok(
+                bookingTransactionService.assignGuideToBooking(
+                        authentication.getName(),
+                        bookingId,
+                        guideId
                 )
         );
     }

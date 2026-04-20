@@ -9,6 +9,7 @@ import com.example.manud_jaya.model.entity.Business;
 import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.response.GuidePendingResponse;
 import com.example.manud_jaya.model.inbound.response.VendorPendingResponse;
+import com.example.manud_jaya.repository.BookingTransactionRepository;
 import com.example.manud_jaya.repository.BusinessRepository;
 import com.example.manud_jaya.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,12 +19,15 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class AdminServiceTest {
@@ -33,6 +37,9 @@ class AdminServiceTest {
 
     @Mock
     private BusinessRepository businessRepository;
+
+    @Mock
+    private BookingTransactionRepository bookingTransactionRepository;
 
     @Mock
     private ModerationAuditService moderationAuditService;
@@ -199,6 +206,42 @@ class AdminServiceTest {
         assertEquals(1, approved.size());
         assertEquals("Guide Two", approved.get(0).getFullName());
         assertEquals("https://example/cv-2.pdf", approved.get(0).getCvDocumentUrl());
+    }
+
+    @Test
+    void getApprovedGuidesWithTripDateShouldReturnOnlyAvailableGuides() {
+        User guide1 = User.builder()
+                .id("guide-1")
+                .username("guide1")
+                .email("guide1@mail.com")
+                .role("GUIDE")
+                .status("APPROVED")
+                .guideProfile(GuideProfile.builder().fullName("Guide One").build())
+                .build();
+        User guide2 = User.builder()
+                .id("guide-2")
+                .username("guide2")
+                .email("guide2@mail.com")
+                .role("GUIDE")
+                .status("APPROVED")
+                .guideProfile(GuideProfile.builder().fullName("Guide Two").build())
+                .build();
+
+        when(userRepository.findByRoleAndStatus("GUIDE", "APPROVED")).thenReturn(List.of(guide1, guide2));
+        when(bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(eq("guide-1"), eq(LocalDate.parse("2026-05-01")), anyList()))
+                .thenReturn(true);
+        when(bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(eq("guide-2"), eq(LocalDate.parse("2026-05-01")), anyList()))
+                .thenReturn(false);
+
+        List<GuidePendingResponse> result = adminService.getApprovedGuides("2026-05-01");
+
+        assertEquals(1, result.size());
+        assertEquals("guide-2", result.get(0).getUserId());
+    }
+
+    @Test
+    void getApprovedGuidesWithInvalidTripDateShouldThrowValidation() {
+        assertThrows(ValidationException.class, () -> adminService.getApprovedGuides("01-05-2026"));
     }
 
     @Test

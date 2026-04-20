@@ -126,7 +126,8 @@ class ControllerCoverageTest {
         when(adminOps.getReviews(0, 10)).thenReturn(null);
         when(bookingSvc.getAdminBookingPayments(null, 0, 10)).thenReturn(null);
         when(bookingSvc.getAdminBookingPaymentDetail("bk1")).thenReturn(null);
-        when(bookingSvc.reviewBookingPayment("admin", "bk1", "APPROVE", "ok")).thenReturn(null);
+        when(bookingSvc.reviewBookingPayment("admin", "bk1", "APPROVE", "ok", null)).thenReturn(null);
+        when(bookingSvc.assignGuideToBooking("admin", "bk1", "g1")).thenReturn(null);
         var c = new AdminOperationsController(adminOps, bookingSvc);
 
         assertEquals(200, c.getBookings(0, 10).getStatusCode().value());
@@ -135,6 +136,7 @@ class ControllerCoverageTest {
 
         AdminBookingDecisionRequest req = AdminBookingDecisionRequest.builder().decision("APPROVE").note("ok").build();
         assertEquals(200, c.reviewBookingPayment(auth("admin"), "bk1", req).getStatusCode().value());
+        assertEquals(200, c.assignGuideToBooking(auth("admin"), "bk1", "g1").getStatusCode().value());
         assertEquals(200, c.getReviews(0, 10).getStatusCode().value());
     }
 

@@ -37,6 +37,11 @@ public class BookingTransactionService {
     private static final String STATUS_PENDING = "pending";
     private static final String STATUS_APPROVED = "approved";
     private static final String STATUS_REJECTED = "rejected";
+    private static final List<String> GUIDE_OCCUPIED_STATUSES = List.of(
+            STATUS_WAITING_FOR_PAYMENT,
+            STATUS_PENDING,
+            STATUS_APPROVED
+    );
 
     private final BookingTransactionRepository bookingTransactionRepository;
     private final UserRepository userRepository;
@@ -75,7 +80,7 @@ public class BookingTransactionService {
             boolean occupied = bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(
                     pkg.getGuideId(),
                     tripDate,
-                    List.of(STATUS_WAITING_FOR_PAYMENT, STATUS_PENDING, STATUS_APPROVED)
+                    GUIDE_OCCUPIED_STATUSES
             );
 
             if (occupied) {
@@ -191,7 +196,24 @@ public class BookingTransactionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
     }
 
-    public BookingTransaction reviewBookingPayment(String adminUsername, String bookingId, String decision, String note) {
+    public BookingTransaction assignGuideToBooking(String adminUsername, String bookingId, String guideId) {
+        userRepository.findByUsername(adminUsername)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
+
+        BookingTransaction transaction = bookingTransactionRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        if (!STATUS_PENDING.equals(transaction.getStatus()) && !STATUS_APPROVED.equals(transaction.getStatus())) {
+            throw new ValidationException("Guide can only be assigned when booking status is pending or approved");
+        }
+
+        applyGuideAssignment(transaction, guideId);
+        transaction.setUpdatedAt(LocalDateTime.now());
+
+        return bookingTransactionRepository.save(transaction);
+    }
+
+    public BookingTransaction reviewBookingPayment(String adminUsername, String bookingId, String decision, String note, String guideId) {
         User admin = userRepository.findByUsername(adminUsername)
                 .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
 
@@ -209,6 +231,10 @@ public class BookingTransactionService {
         String normalizedDecision = decision.trim().toUpperCase();
         if ("APPROVE".equals(normalizedDecision)) {
             transaction.setStatus(STATUS_APPROVED);
+
+            if (guideId != null && !guideId.isBlank()) {
+                applyGuideAssignment(transaction, guideId);
+            }
         } else if ("REJECT".equals(normalizedDecision)) {
             if (note == null || note.isBlank()) {
                 throw new ValidationException("note is required for reject decision");
@@ -299,6 +325,38 @@ public class BookingTransactionService {
                 .startDate(startDate)
                 .endDate(endDate)
                 .build();
+    }
+
+    private void applyGuideAssignment(BookingTransaction transaction, String guideId) {
+        if (guideId == null || guideId.isBlank()) {
+            throw new ValidationException("guideId is required");
+        }
+
+        packageRepository.findByIdAndApprovalStatus(transaction.getPackageId(), "APPROVED")
+                .orElseThrow(() -> new ValidationException("Guide can only be assigned for approved package booking"));
+
+        User guide = userRepository.findByIdAndRole(guideId, "GUIDE")
+                .orElseThrow(() -> new ResourceNotFoundException("Guide not found"));
+
+        if (!"APPROVED".equalsIgnoreCase(guide.getStatus())) {
+            throw new ValidationException("Only approved guide can be assigned");
+        }
+
+        if (guideId.equals(transaction.getGuideId())) {
+            return;
+        }
+
+        boolean occupied = bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(
+                guideId,
+                transaction.getTripDate(),
+                GUIDE_OCCUPIED_STATUSES
+        );
+
+        if (occupied) {
+            throw new ConflictException("Guide is already assigned on the selected tripDate");
+        }
+
+        transaction.setGuideId(guideId);
     }
 
     private void validateCreateRequest(CreateBookingRequest request) {

@@ -79,10 +79,13 @@ public class AdminController {
     }
 
     @GetMapping("/guides/approved")
-    @Operation(summary = "Get approved guides")
+    @Operation(summary = "Get approved guides", description = "Get approved guides. Optional tripDate (yyyy-MM-dd) filters only guides available on that date.")
     @ApiResponse(responseCode = "200", description = "Approved guides retrieved")
-    public ResponseEntity<List<GuidePendingResponse>> getApprovedGuides() {
-        return ResponseEntity.ok(adminService.getApprovedGuides());
+    @ApiResponse(responseCode = "400", description = "Invalid tripDate format")
+    public ResponseEntity<List<GuidePendingResponse>> getApprovedGuides(
+            @RequestParam(required = false) String tripDate
+    ) {
+        return ResponseEntity.ok(adminService.getApprovedGuides(tripDate));
     }
 
     @PostMapping("/guides/{userId}/approve")
