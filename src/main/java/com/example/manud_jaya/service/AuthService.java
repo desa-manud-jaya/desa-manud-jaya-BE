@@ -4,6 +4,7 @@ import com.example.manud_jaya.configuration.security.JwtService;
 import com.example.manud_jaya.exception.ConflictException;
 import com.example.manud_jaya.exception.ResourceNotFoundException;
 import com.example.manud_jaya.exception.UnauthorizedException;
+import com.example.manud_jaya.exception.ValidationException;
 import com.example.manud_jaya.model.dto.ApprovalStatus;
 import com.example.manud_jaya.model.dto.GuideProfile;
 import com.example.manud_jaya.model.dto.VendorProfile;
@@ -18,6 +19,9 @@ import com.example.manud_jaya.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
@@ -29,6 +33,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final SupabaseStorageService supabaseStorageService;
 
     public User getUser(String username) {
 
@@ -131,17 +136,25 @@ public class AuthService {
     }
 
     // REGISTER GUIDE
-    public void registerGuide(GuideRegisterRequest request) {
+    public void registerGuide(GuideRegisterRequest request, MultipartFile cvFile) {
 
         String normalizedUsername = normalizeUsername(request.getUsername());
         String normalizedEmail = normalizeEmail(request.getEmail());
 
         validateUniqueRegistrationIdentity(normalizedUsername, normalizedEmail);
 
+        String cvDocumentUrl;
+        try {
+            cvDocumentUrl = supabaseStorageService.uploadGuideCv(cvFile);
+        } catch (IOException ex) {
+            throw new ValidationException("Failed to upload guide CV", ex);
+        }
+
         GuideProfile guideProfile = GuideProfile.builder()
                 .fullName(request.getFullName())
                 .phone(request.getPhone())
                 .licenseNumber(request.getLicenseNumber())
+                .cvDocumentUrl(cvDocumentUrl)
                 .approvalStatus(ApprovalStatus.PENDING.name())
                 .build();
 

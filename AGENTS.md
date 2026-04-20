@@ -245,6 +245,7 @@ Do not commit real secrets into repository files.
   - Vendor dashboard analytics + impact analytics
   - Admin dashboard analytics
   - Vendor/Admin bookings and reviews listing APIs
+  - Guide personal profile endpoint `GET /guide/profile` (returns guide identity + approval metadata for authenticated guide)
 - Unified admin approval center endpoint:
   - partner requests
   - package requests
@@ -262,6 +263,7 @@ Do not commit real secrets into repository files.
   - `GET /admin/revenue/summary` for total revenue
   - Date-range filtering via `startDate` + `endDate` with format validation (`yyyy-MM-dd`)
   - Unit tests for booking transaction and vendor operations services
+  - Booking guide-assignment validation toggle via `booking.require-assigned-guide` / `BOOKING_REQUIRE_ASSIGNED_GUIDE` (current default `false`, set `true` to enforce guide requirement)
 - Public approved listing endpoints:
   - `GET /destinations/approved`
   - `GET /packages/approved`
@@ -269,6 +271,9 @@ Do not commit real secrets into repository files.
 - Auth registration duplicate protection:
   - `/auth/register/user` and `/auth/register/vendor` reject duplicated username/email across all roles.
   - Duplicate identity errors are surfaced as HTTP `409 Conflict`.
+- Guide registration CV upload:
+  - `/auth/register/guide` supports multipart form-data with parts `data` (JSON) + `cv` (PDF/DOC/DOCX).
+  - Uploaded CV URL is persisted on `GuideProfile.cvDocumentUrl`.
 - Document upload format expansion:
   - `SupabaseStorageService#uploadDocument` accepts DOC (`application/msword`) and DOCX (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`) in addition to existing formats.
   - Validation message updated to: `Invalid document type. Supported: PDF/DOC/DOCX/JPG/JPEG/PNG`.

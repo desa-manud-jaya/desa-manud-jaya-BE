@@ -34,6 +34,11 @@ public class SupabaseStorageService {
         return upload(file, "documents/");
     }
 
+    public String uploadGuideCv(MultipartFile file) throws IOException {
+        validateGuideCv(file);
+        return upload(file, "guide-cv/");
+    }
+
     private String upload(MultipartFile file, String folder) throws IOException {
 
         String original = file.getOriginalFilename() != null
@@ -93,6 +98,33 @@ public class SupabaseStorageService {
 
         if (!isPdf && !isSupportedImage && !isWord) {
             throw new ValidationException("Invalid document type. Supported: PDF/DOC/DOCX/JPG/JPEG/PNG");
+        }
+    }
+
+    private void validateGuideCv(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ValidationException("CV file is empty");
+        }
+
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new ValidationException("CV file size exceeds 10 MB");
+        }
+
+        String contentType = file.getContentType();
+        String filename = file.getOriginalFilename() != null
+                ? file.getOriginalFilename().toLowerCase()
+                : "";
+
+        boolean isPdf = "application/pdf".equals(contentType)
+                || ("application/octet-stream".equals(contentType) && filename.endsWith(".pdf"));
+
+        boolean isWord = "application/msword".equals(contentType)
+                || "application/vnd.openxmlformats-officedocument.wordprocessingml.document".equals(contentType)
+                || ("application/octet-stream".equals(contentType)
+                && (filename.endsWith(".doc") || filename.endsWith(".docx")));
+
+        if (!isPdf && !isWord) {
+            throw new ValidationException("Invalid CV type. Supported: PDF/DOC/DOCX");
         }
     }
 

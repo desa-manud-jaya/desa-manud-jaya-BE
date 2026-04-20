@@ -100,4 +100,39 @@ class SupabaseStorageServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "a.pdf", "application/pdf", payload);
         assertThrows(RuntimeException.class, () -> supabaseStorageService.uploadDocument(file));
     }
+
+    @Test
+    void uploadGuideCvShouldSupportPdfDocDocxAndOctetExtensions() throws Exception {
+        MockMultipartFile pdf = new MockMultipartFile("cv", "guide.pdf", "application/pdf", "abc".getBytes());
+        MockMultipartFile doc = new MockMultipartFile("cv", "guide.doc", "application/msword", "abc".getBytes());
+        MockMultipartFile docx = new MockMultipartFile(
+                "cv",
+                "guide.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "abc".getBytes()
+        );
+        MockMultipartFile octetPdf = new MockMultipartFile("cv", "guide.pdf", "application/octet-stream", "abc".getBytes());
+        MockMultipartFile octetDoc = new MockMultipartFile("cv", "guide.doc", "application/octet-stream", "abc".getBytes());
+        MockMultipartFile octetDocx = new MockMultipartFile("cv", "guide.docx", "application/octet-stream", "abc".getBytes());
+
+        assertTrue(supabaseStorageService.uploadGuideCv(pdf).contains("/guide-cv/"));
+        assertTrue(supabaseStorageService.uploadGuideCv(doc).contains("/guide-cv/"));
+        assertTrue(supabaseStorageService.uploadGuideCv(docx).contains("/guide-cv/"));
+        assertTrue(supabaseStorageService.uploadGuideCv(octetPdf).contains("/guide-cv/"));
+        assertTrue(supabaseStorageService.uploadGuideCv(octetDoc).contains("/guide-cv/"));
+        assertTrue(supabaseStorageService.uploadGuideCv(octetDocx).contains("/guide-cv/"));
+    }
+
+    @Test
+    void uploadGuideCvInvalidTypeShouldThrow() {
+        MockMultipartFile file = new MockMultipartFile("cv", "guide.png", "image/png", "abc".getBytes());
+        assertThrows(RuntimeException.class, () -> supabaseStorageService.uploadGuideCv(file));
+    }
+
+    @Test
+    void uploadGuideCvTooLargeShouldThrow() {
+        byte[] payload = new byte[11 * 1024 * 1024];
+        MockMultipartFile file = new MockMultipartFile("cv", "guide.pdf", "application/pdf", payload);
+        assertThrows(RuntimeException.class, () -> supabaseStorageService.uploadGuideCv(file));
+    }
 }

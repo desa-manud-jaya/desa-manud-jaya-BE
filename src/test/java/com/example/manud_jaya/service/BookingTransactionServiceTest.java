@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -64,8 +66,19 @@ class BookingTransactionServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        setRequireAssignedGuide(true);
         when(bookingTransactionRepository.existsByGuideIdAndTripDateAndStatusIn(anyString(), any(), anyList()))
                 .thenReturn(false);
+    }
+
+    private void setRequireAssignedGuide(boolean value) {
+        try {
+            Field field = BookingTransactionService.class.getDeclaredField("requireAssignedGuide");
+            field.setAccessible(true);
+            field.set(bookingTransactionService, value);
+        } catch (ReflectiveOperationException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Test
@@ -201,6 +214,53 @@ class BookingTransactionServiceTest {
 
         assertThrows(com.example.manud_jaya.exception.ConflictException.class,
                 () -> bookingTransactionService.createBooking("user1", request));
+    }
+
+    @Test
+    void createBookingWithoutAssignedGuideShouldThrowWhenToggleEnabled() {
+        setRequireAssignedGuide(true);
+
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .businessId("biz")
+                .packageId("pkg")
+                .tripDate("2026-05-01")
+                .quantity(1)
+                .build();
+
+        when(userRepository.findByUsername("user1")).thenReturn(Optional.of(User.builder().id("u1").build()));
+        when(businessRepository.findById("biz")).thenReturn(Optional.of(Business.builder().id("biz").build()));
+        when(packageRepository.findById("pkg")).thenReturn(Optional.of(Package.builder().id("pkg").businessId("biz").price(BigDecimal.ONE).build()));
+
+        assertThrows(ValidationException.class,
+                () -> bookingTransactionService.createBooking("user1", request));
+        verify(bookingTransactionRepository, never())
+                .existsByGuideIdAndTripDateAndStatusIn(anyString(), any(), anyList());
+    }
+
+    @Test
+    void createBookingWithoutAssignedGuideShouldPassWhenToggleDisabled() {
+        setRequireAssignedGuide(false);
+
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .businessId("biz")
+                .packageId("pkg")
+                .tripDate("2026-05-01")
+                .quantity(2)
+                .build();
+
+        when(userRepository.findByUsername("user1")).thenReturn(Optional.of(User.builder().id("u1").build()));
+        when(businessRepository.findById("biz")).thenReturn(Optional.of(Business.builder().id("biz").build()));
+        when(packageRepository.findById("pkg")).thenReturn(Optional.of(Package.builder().id("pkg").businessId("biz").price(BigDecimal.valueOf(150000)).build()));
+        when(bookingTransactionRepository.save(any(BookingTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingTransaction result = bookingTransactionService.createBooking("user1", request);
+
+        assertNotNull(result);
+        assertEquals("waiting_for_payment", result.getStatus());
+        assertEquals(300000.0, result.getAmount());
+        assertNull(result.getGuideId());
+        verify(bookingTransactionRepository, never())
+                .existsByGuideIdAndTripDateAndStatusIn(anyString(), any(), anyList());
     }
 
     @Test
