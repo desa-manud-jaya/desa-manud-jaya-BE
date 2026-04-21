@@ -11,6 +11,7 @@ import com.example.manud_jaya.model.entity.User;
 import com.example.manud_jaya.model.inbound.request.CreateBookingRequest;
 import com.example.manud_jaya.model.inbound.response.PagedResponse;
 import com.example.manud_jaya.model.inbound.response.RevenueSummaryResponse;
+import com.example.manud_jaya.model.inbound.response.UserBookingHistoryItemResponse;
 import com.example.manud_jaya.repository.BookingTransactionRepository;
 import com.example.manud_jaya.repository.BusinessRepository;
 import com.example.manud_jaya.repository.PackageRepository;
@@ -28,6 +29,8 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -136,7 +139,7 @@ public class BookingTransactionService {
         }
     }
 
-    public PagedResponse<BookingTransaction> getUserBookingHistory(String username, String userId, int page, int size) {
+    public PagedResponse<UserBookingHistoryItemResponse> getUserBookingHistory(String username, String userId, int page, int size) {
         validatePagination(page, size);
 
         User currentUser = userRepository.findByUsername(username)
@@ -147,8 +150,12 @@ public class BookingTransactionService {
         }
 
         var data = bookingTransactionRepository.findByUserId(userId, PageRequest.of(page, size));
-        return PagedResponse.<BookingTransaction>builder()
-                .items(data.getContent())
+        Map<String, String> guideNamesById = resolveGuideNamesById(data.getContent());
+
+        return PagedResponse.<UserBookingHistoryItemResponse>builder()
+                .items(data.getContent().stream()
+                        .map(transaction -> toUserBookingHistoryItemResponse(transaction, guideNamesById))
+                        .toList())
                 .page(page)
                 .size(size)
                 .total(data.getTotalElements())
@@ -324,6 +331,51 @@ public class BookingTransactionService {
                 .transactionCount(transactions.size())
                 .startDate(startDate)
                 .endDate(endDate)
+                .build();
+    }
+
+    private Map<String, String> resolveGuideNamesById(List<BookingTransaction> transactions) {
+        List<String> guideIds = transactions.stream()
+                .map(BookingTransaction::getGuideId)
+                .filter(guideId -> guideId != null && !guideId.isBlank())
+                .distinct()
+                .toList();
+
+        if (guideIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        return userRepository.findAllById(guideIds).stream()
+                .filter(user -> "GUIDE".equalsIgnoreCase(user.getRole()))
+                .collect(Collectors.toMap(
+                        User::getId,
+                        user -> user.getGuideProfile() == null ? null : user.getGuideProfile().getFullName(),
+                        (existing, replacement) -> existing
+                ));
+    }
+
+    private UserBookingHistoryItemResponse toUserBookingHistoryItemResponse(
+            BookingTransaction transaction,
+            Map<String, String> guideNamesById
+    ) {
+        return UserBookingHistoryItemResponse.builder()
+                .id(transaction.getId())
+                .userId(transaction.getUserId())
+                .businessId(transaction.getBusinessId())
+                .packageId(transaction.getPackageId())
+                .guideId(transaction.getGuideId())
+                .guideName(guideNamesById.get(transaction.getGuideId()))
+                .tripDate(transaction.getTripDate())
+                .quantity(transaction.getQuantity())
+                .amount(transaction.getAmount())
+                .status(transaction.getStatus())
+                .paymentProofUrl(transaction.getPaymentProofUrl())
+                .paymentUploadedAt(transaction.getPaymentUploadedAt())
+                .reviewedAt(transaction.getReviewedAt())
+                .reviewedBy(transaction.getReviewedBy())
+                .reviewNote(transaction.getReviewNote())
+                .createdAt(transaction.getCreatedAt())
+                .updatedAt(transaction.getUpdatedAt())
                 .build();
     }
 

@@ -366,13 +366,26 @@ class BookingTransactionServiceTest {
     @Test
     void getUserBookingHistoryShouldReturnData() {
         User currentUser = User.builder().id("user-1").username("user1").build();
-        BookingTransaction transaction = BookingTransaction.builder().id("trx-1").userId("user-1").amount(10.0).build();
+        BookingTransaction transaction = BookingTransaction.builder()
+                .id("trx-1")
+                .userId("user-1")
+                .guideId("guide-1")
+                .amount(10.0)
+                .build();
+        User guide = User.builder()
+                .id("guide-1")
+                .role("GUIDE")
+                .guideProfile(com.example.manud_jaya.model.dto.GuideProfile.builder().fullName("Budi Santoso").build())
+                .build();
         when(userRepository.findByUsername("user1")).thenReturn(Optional.of(currentUser));
         when(bookingTransactionRepository.findByUserId("user-1", PageRequest.of(0, 10)))
                 .thenReturn(new PageImpl<>(List.of(transaction), PageRequest.of(0, 10), 1));
+        when(userRepository.findAllById(List.of("guide-1"))).thenReturn(List.of(guide));
 
-        PagedResponse<BookingTransaction> response = bookingTransactionService.getUserBookingHistory("user1", "user-1", 0, 10);
+        PagedResponse<com.example.manud_jaya.model.inbound.response.UserBookingHistoryItemResponse> response =
+                bookingTransactionService.getUserBookingHistory("user1", "user-1", 0, 10);
         assertEquals(1, response.getTotal());
+        assertEquals("Budi Santoso", response.getItems().get(0).getGuideName());
     }
 
     @Test
